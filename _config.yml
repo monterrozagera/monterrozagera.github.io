@@ -21,7 +21,7 @@
 title: monterrozagera
 email: monterrozagerardo@protonmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  I write about reverse engineering, malware analysis and brain-eating.
+  I write about reverse engineering, malware analysis and brain-eating obfuscation.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: jekyllrb
