@@ -16,3 +16,5 @@ title: home
 [Learning Ansible - Notes](./Learning-Docker/Learning%20Ansible.html)
 
 [Learning Puppet - Notes](./Learning-Docker/Learning%20Puppet.html)
+
+[Learning Chef - Notes](./Learning-Docker/Learning%20Chef.html)
