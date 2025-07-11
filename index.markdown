@@ -9,6 +9,8 @@ title: home
 
 [Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators](./deobufscating-javascript1.html).
 
+[Cloud Security Incident: Misconfigured S3 Bucket Exposes Sensitive Data](./cloud-scenario-1.markdown)
+
 ## Notes
 
 [Learning Docker - Notes](./Learning-Docker/Learning%20Docker.html)
