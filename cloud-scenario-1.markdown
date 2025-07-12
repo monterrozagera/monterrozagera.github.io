@@ -108,7 +108,7 @@ This function ensures that **every bucket policy update** is immediately scanned
 
 ## Final Outcome
 
-Thanks to fast detection and remediation, FinTrust minimized the breach impact. The team published an internal postmortem and added automated guardrails across environments to prevent future misconfigurations.
+Thanks to fast detection and remediation, [ redacted ] minimized the breach impact. The team published an internal postmortem and added automated guardrails across environments to prevent future misconfigurations.
 
 ---
 
@@ -117,5 +117,79 @@ Thanks to fast detection and remediation, FinTrust minimized the breach impact. 
 * **Least privilege** should be enforced at all times — especially for storage.
 * **Automation** can significantly reduce human error.
 * **Monitoring and alerting** are key in catching misconfigurations early.
+
+## **Corrected S3 Bucket Policy (JSON)**
+
+This policy **only allows access to the bucket for a specific IAM role** (e.g., a Lambda function or EC2 instance), avoiding any public access:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowOnlyTrustedRoleAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:role/FintrustExportReader"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::fintrust-exports/*"
+    }
+  ]
+}
+```
+
+> Make sure Block Public Access settings are still enabled at the bucket level to enforce security, even with this restrictive policy.
+
+---
+
+## **Set Up EventBridge Rule to Trigger Lambda on S3 Bucket Policy Changes**
+
+You can use the AWS CLI to create the rule that listens for S3 bucket policy changes via CloudTrail and routes them to the auditing Lambda function.
+
+### **Step A: Create EventBridge Rule**
+
+```bash
+aws events put-rule \
+  --name "DetectS3PublicPolicyChange" \
+  --event-pattern '{
+    "source": ["aws.s3"],
+    "detail-type": ["AWS API Call via CloudTrail"],
+    "detail": {
+      "eventSource": ["s3.amazonaws.com"],
+      "eventName": ["PutBucketPolicy"]
+    }
+  }' \
+  --state ENABLED
+```
+
+### **Step B: Attach Lambda Function as Target**
+
+```bash
+aws events put-targets \
+  --rule "DetectS3PublicPolicyChange" \
+  --targets "Id"="1","Arn"="arn:aws:lambda:us-west-2:123456789012:function:S3PolicyAuditLambda"
+```
+
+### **Step C: Give EventBridge Permission to Invoke the Lambda**
+
+```bash
+aws lambda add-permission \
+  --function-name S3PolicyAuditLambda \
+  --statement-id "AllowEventBridgeInvoke" \
+  --action "lambda:InvokeFunction" \
+  --principal events.amazonaws.com \
+  --source-arn "arn:aws:events:us-west-2:123456789012:rule/DetectS3PublicPolicyChange"
+```
+
+---
+
+## Final Architecture Flow
+
+1. **DevOps makes a policy change** on S3 bucket.
+2. **CloudTrail logs the event**, EventBridge detects `PutBucketPolicy`.
+3. EventBridge **triggers the Lambda** (`S3PolicyAuditLambda`).
+4. Lambda **analyzes the new policy**.
+5. If the policy allows public access, it **sends an SNS alert** to the security team.
 
 ---
