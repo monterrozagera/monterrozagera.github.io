@@ -7,11 +7,14 @@ title: home
 
 ## Write-ups
 
-[Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators](./deobufscating-javascript1.html).
-
 [Cloud Security Incident 1: Misconfigured S3 Bucket Exposes Sensitive Data](./cloud-scenario-1.markdown)
 
 [Cloud Security Incident 2: IAM Privilege Escalation Across AWS Accounts](./cloud-scenario-2.markdown)
+
+[Cloud Security: Secure Lambda Functions](./cloud-security-secure-lambda-functions.markdown)
+
+[Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators](./deobufscating-javascript1.html).
+
 
 ## Notes
 

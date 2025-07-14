@@ -8,8 +8,11 @@ permalink: /cloud-sec2.html
 ## Scenario Overview
 
 **Company**: [ redacted ]
+
 **Cloud Provider**: AWS
+
 **Services in Use**: IAM, AWS Organizations, STS, Lambda, CloudTrail, CloudWatch, AWS Config
+
 **Security Tooling**: Detective, GuardDuty, Custom STS Log Analyzer Lambda
 
 ---
