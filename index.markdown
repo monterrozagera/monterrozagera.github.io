@@ -15,6 +15,8 @@ title: home
 
 [Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators](./deobufscating-javascript1.html).
 
+[Forensic Analysis of MP4 Files Using rmp4_meta (Rust)](./forensic-analysis-mp4-files.markdown)
+
 
 ## Notes
 
