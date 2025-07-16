@@ -1,8 +1,30 @@
 ---
 # Feel free to add content and custom Front Matter to this file.
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
+layout: home
 title: home
+---
+
+# Gerardo Monterroza
+
+**Cybersecurity Engineer • Cloud Tools • Forensics Enthusiast**
+
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)
+![Rust](https://img.shields.io/badge/Rust-🦀%20Rust-orange?style=flat&logo=rust)
+
+---
+
+## Projects
+
+### [JsDeFr](https://github.com/monterrozagera/JSDeFr)
+the Javascript Deobfuscation framework.
+
+### [mp4-info](https://github.com/monterrozagera/mp4-info)
+Rust-based CLI to extract metadata from MP4 videos for forensic use.
+
+### [aws-pyscripts](https://github.com/monterrozagera/aws-pyscripts)
+Python tools to analyze and audit AWS cloud infrastructure security.
+
 ---
 
 ## Write-ups
@@ -19,6 +41,23 @@ title: home
 
 [Forensic Analysis of MP4 Files Using rmp4_meta (Rust)](./forensic-analysis-mp4-files.markdown)
 
+---
+
+## About Me
+
+I’m Gerardo, a security engineer who builds tools to automate forensic analysis and cloud security audits. My interests include:
+- Digital forensics
+- Threat hunting
+- Rust + Python scripting
+- AWS hardening
+
+---
+
+## Contact
+
+- Email: [monterrozagerardo@icloud](mailto:monterrozagerardo@icloud.com)  
+- LinkedIn: [linkedin.com/in/gerardo-monterroza-8208aa192](https://www.linkedin.com/in/gerardo-monterroza-8208aa192)  
+- GitHub: [github.com/monterrozagera](https://github.com/monterrozagera)
 
 ## Notes
 
