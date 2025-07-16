@@ -19,7 +19,7 @@ title: home
 ### [JsDeFr](https://github.com/monterrozagera/JSDeFr)
 the Javascript Deobfuscation framework.
 
-### [rmp4-meta](https://github.com/monterrozagera/rmp4-meta)
+### [rmp4-meta](https://github.com/monterrozagera/rmp4_meta)
 Rust-based CLI to extract metadata from MP4 videos for forensic use.
 
 ### [aws-pyscripts](https://github.com/monterrozagera/aws-pyscripts)
