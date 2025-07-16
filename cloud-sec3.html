@@ -1,0 +1,171 @@
+<h2 id="cloud-security-incident-aws-cloud-intrusion-via-compromised-cicd-pipeline">Cloud Security Incident: AWS Cloud Intrusion via Compromised CI/CD Pipeline</h2>
+
+<h2 id="scenario-overview">Scenario Overview</h2>
+
+<p><strong>Company</strong>: [ redacted ]</p>
+
+<p><strong>Cloud Provider</strong>: AWS</p>
+
+<p><strong>Services in Use</strong>: ECS Fargate, S3, Automation roles in IAM, AWS Secrets Manager, CI/CD via GitHub Actions</p>
+
+<hr />
+
+<h2 id="step-by-step-attack-flow">Step-by-Step Attack Flow</h2>
+
+<h3 id="1-initial-access-via-stolen-github-token">1. <strong>Initial Access via Stolen GitHub Token</strong></h3>
+
+<p>An attacker:</p>
+
+<ul>
+  <li>Phishes or leaks a GitHub <strong>Personal Access Token (PAT)</strong>.</li>
+  <li>Gets access to the company’s private CI/CD repo.</li>
+  <li>
+    <p>Modifies a workflow YAML file to include:</p>
+
+    <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">aws sts get-caller-identity</span>
+<span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">aws s3 sync s3://sensitive-bucket ./exfil</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Uses <code class="language-plaintext highlighter-rouge">aws configure</code> with <strong>long-lived IAM user credentials</strong> embedded in the repo (bad practice).</li>
+</ul>
+
+<p><strong>Impact:</strong> They now exfiltrate S3 data via a poisoned CI pipeline.</p>
+
+<hr />
+
+<h3 id="2-lateral-movement-via-overprivileged-iam-roles">2. <strong>Lateral Movement via Overprivileged IAM Roles</strong></h3>
+
+<ul>
+  <li>Attacker extracts credentials for the <strong>deployer IAM role</strong> from CI logs or environment variables.</li>
+  <li>Uses <code class="language-plaintext highlighter-rouge">sts:AssumeRole</code> to escalate to a <strong>high-privilege role</strong> (e.g., <code class="language-plaintext highlighter-rouge">AdminAssumeRole</code>).</li>
+  <li>Deploys malicious containers to ECS via CLI.</li>
+</ul>
+
+<hr />
+
+<h3 id="3-persistence--stealth">3. <strong>Persistence &amp; Stealth</strong></h3>
+
+<ul>
+  <li>
+    <p>Sets up a Lambda function that triggers every hour to:</p>
+
+    <ul>
+      <li>Check if their backdoor is removed</li>
+      <li>Re-create malicious ECS tasks</li>
+    </ul>
+  </li>
+  <li>
+    <p>Attaches <code class="language-plaintext highlighter-rouge">CloudTrail:StopLogging</code> or modifies logging retention to hide traces.</p>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="detection--mitigation">Detection &amp; Mitigation</h2>
+
+<h3 id="1-iam-best-practices">1. <strong>IAM Best Practices</strong></h3>
+
+<ul>
+  <li>Enable <strong>least privilege</strong>: limit <code class="language-plaintext highlighter-rouge">sts:AssumeRole</code>, especially in CI/CD roles.</li>
+  <li>Rotate credentials regularly.</li>
+  <li>Use <strong>short-lived tokens</strong>, like GitHub OIDC + IAM federation.</li>
+</ul>
+
+<h3 id="2-guard-cicd">2. <strong>Guard CI/CD</strong></h3>
+
+<ul>
+  <li>Use <strong>branch protections</strong> and signed commits.</li>
+  <li>Store secrets in AWS Secrets Manager or GitHub Encrypted Secrets — not in code.</li>
+  <li>Monitor CI workflows for unusual changes.</li>
+</ul>
+
+<h3 id="3-s3-hardening">3. <strong>S3 Hardening</strong></h3>
+
+<ul>
+  <li>Disable public access on all buckets.</li>
+  <li>Enable bucket policies with <code class="language-plaintext highlighter-rouge">aws:PrincipalOrgID</code> conditions.</li>
+  <li>Enable <strong>S3 server-side encryption</strong> and <strong>access logs</strong>.</li>
+</ul>
+
+<h3 id="4-cloudtrail--guardduty">4. <strong>CloudTrail &amp; GuardDuty</strong></h3>
+
+<ul>
+  <li>Ensure <strong>CloudTrail</strong> is <strong>enabled in all regions</strong> and logging to a protected S3 bucket.</li>
+  <li>
+    <p>Use <strong>Amazon GuardDuty</strong> to detect:</p>
+
+    <ul>
+      <li>Unusual data exfiltration</li>
+      <li>STS role abuse</li>
+      <li>EC2 credential theft</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="5-automated-response">5. <strong>Automated Response</strong></h3>
+
+<ul>
+  <li>Use AWS Config or Security Hub to flag violations.</li>
+  <li>
+    <p>Use Lambda or Step Functions to automatically:</p>
+
+    <ul>
+      <li>Revoke compromised keys</li>
+      <li>Delete unauthorized ECS services</li>
+      <li>Notify the security team via SNS or Slack</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="example-mitigation-policy-snippet">Example Mitigation Policy Snippet</h2>
+
+<p>Deny overbroad <code class="language-plaintext highlighter-rouge">AssumeRole</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Deny"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sts:AssumeRole"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Condition"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"StringNotEquals"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"aws:RequestedRegion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-west-2"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="key-takeaways">Key Takeaways</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Threat Vector</th>
+      <th>Mitigation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Stolen CI tokens</td>
+      <td>Use GitHub OIDC + no static credentials</td>
+    </tr>
+    <tr>
+      <td>Overprivileged IAM roles</td>
+      <td>Apply least privilege + resource-level permissions</td>
+    </tr>
+    <tr>
+      <td>S3 data exfil</td>
+      <td>Use SCPs, object-level logging</td>
+    </tr>
+    <tr>
+      <td>Malicious persistence</td>
+      <td>Monitor CloudTrail, limit <code class="language-plaintext highlighter-rouge">lambda:*</code> actions</td>
+    </tr>
+    <tr>
+      <td>Logging tampering</td>
+      <td>Lock CloudTrail S3 bucket with bucket policy</td>
+    </tr>
+  </tbody>
+</table>

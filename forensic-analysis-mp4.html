@@ -1,0 +1,146 @@
+<h1 id="forensic-analysis-of-mp4-files-using-rmp4_meta-rust">Forensic Analysis of MP4 Files Using <code class="language-plaintext highlighter-rouge">rmp4_meta</code> (Rust)</h1>
+
+<p>In digital forensics, <strong>video files</strong> often hold key evidence — from security camera recordings to smartphone footage. But it’s not always about what’s visible on screen. Sometimes, the <strong>metadata inside an MP4</strong> file can reveal just as much, if not more.</p>
+
+<p>In this article, we explore how to use a custom Rust CLI tool called <code class="language-plaintext highlighter-rouge">rmp4_meta</code> to extract <strong>forensic metadata</strong> from <code class="language-plaintext highlighter-rouge">.mp4</code> video files. We’ll explain what information is available, how to interpret it, and why it’s valuable in real-world investigations.</p>
+
+<hr />
+
+<h2 id="meet-rmp4_meta-a-rust-based-video-metadata-extractor">Meet <code class="language-plaintext highlighter-rouge">rmp4_meta</code>: A Rust-Based Video Metadata Extractor</h2>
+
+<p><code class="language-plaintext highlighter-rouge">rmp4_meta</code> is a lightweight, fast CLI tool built in <strong>Rust</strong>, designed to inspect the internal structure of MP4 files. Unlike GUI-heavy editors or bloated media players, this tool focuses on precision and minimalism — ideal for scripting, automation, or forensic pipelines.</p>
+
+<h3 id="features">Features</h3>
+
+<ul>
+  <li>Parses MP4 file structure (ISO/IEC 14496-12)</li>
+  <li>Extracts duration and timescale</li>
+  <li>Lists all video/audio tracks</li>
+  <li>Shows codecs used (e.g., <code class="language-plaintext highlighter-rouge">avc1</code>, <code class="language-plaintext highlighter-rouge">mp4a</code>)</li>
+  <li>Displays video resolution, audio channels, and sample rate</li>
+</ul>
+
+<hr />
+
+<h2 id="installation">Installation</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/monterrozagera/rmp4_meta.git
+<span class="nb">cd </span>rmp4_meta
+cargo build <span class="nt">--release</span>
+./target/release/rmp4_meta some_video.mp4
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="what-you-can-learn-from-mp4-metadata">What You Can Learn from MP4 Metadata</h2>
+
+<p>Even without watching a video, MP4 metadata can help answer questions like:</p>
+
+<h3 id="1-was-the-video-trimmed-or-re-encoded">1. <strong>Was the video trimmed or re-encoded?</strong></h3>
+
+<p>Compare duration metadata vs. actual file size. A 4-second video with 20 MB of data may indicate re-encoding with a high bitrate, possibly to obscure the original recording time.</p>
+
+<h3 id="2-which-codec-was-used">2. <strong>Which codec was used?</strong></h3>
+
+<p>Certain surveillance systems or phone models use specific codecs. A mismatch in expected codec (e.g., <code class="language-plaintext highlighter-rouge">avc1</code> vs. <code class="language-plaintext highlighter-rouge">hevc</code>) might suggest tampering or conversion.</p>
+
+<h3 id="3-what-was-the-original-resolution">3. <strong>What was the original resolution?</strong></h3>
+
+<p>If the resolution is low (<code class="language-plaintext highlighter-rouge">480x360</code>) but the camera claims to shoot in <code class="language-plaintext highlighter-rouge">1080p</code>, the file may have been downscaled or screen-recorded.</p>
+
+<h3 id="4-is-there-audio-at-all">4. <strong>Is there audio at all?</strong></h3>
+
+<p>Audio tracks are sometimes missing in fraudulent videos. <code class="language-plaintext highlighter-rouge">rmp4_meta</code> clearly shows if audio tracks are present, their sample rate, and number of channels.</p>
+
+<h3 id="5-how-many-tracks-are-there">5. <strong>How many tracks are there?</strong></h3>
+
+<p>Multiple audio/video tracks may indicate overlays or edits. A typical smartphone recording has one video and one audio track — anything else is suspect.</p>
+
+<hr />
+
+<h2 id="example-output">Example Output</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>File: evidence_clip.mp4
+Duration: 45.82 seconds
+Timescale: 1000
+
+Track ID: 1
+Type: Video
+Codec: avc1
+Resolution: 1280x720
+
+Track ID: 2
+Type: Audio
+Codec: mp4a
+Channels: 1, Sample Rate: 48000
+</code></pre></div></div>
+
+<p>From this, we can infer:</p>
+
+<ul>
+  <li>This is likely an HD video (720p).</li>
+  <li>Audio is mono (e.g., from a small mic).</li>
+  <li>Duration is under 1 minute, which is typical of a clip trimmed for sharing.</li>
+</ul>
+
+<hr />
+
+<h2 id="use-cases-in-digital-forensics">Use Cases in Digital Forensics</h2>
+
+<h3 id="timeline-reconstruction">Timeline Reconstruction</h3>
+
+<p>If multiple video clips are presented, analyzing timestamps, durations, and codecs can help reconstruct the <strong>original sequence</strong> or detect missing footage.</p>
+
+<h3 id="authenticity-verification">Authenticity Verification</h3>
+
+<p>Metadata inconsistencies (e.g., strange codecs, multiple tracks, missing audio) can suggest <strong>tampering</strong>, transcoding, or editing.</p>
+
+<h3 id="tool-fingerprinting">Tool Fingerprinting</h3>
+
+<p>Certain devices leave consistent metadata fingerprints. If a video claims to be from a phone model that uses <code class="language-plaintext highlighter-rouge">hevc</code>, but it’s encoded in <code class="language-plaintext highlighter-rouge">avc1</code>, that’s a red flag.</p>
+
+<h3 id="chain-of-custody-support">Chain of Custody Support</h3>
+
+<p>During evidence intake, automatically extracting MP4 metadata helps create <strong>audit trails</strong> for digital files.</p>
+
+<hr />
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>In forensics, every bit counts — literally. While MP4 metadata won’t tell you everything, it can <strong>validate or contradict</strong> witness statements, expose tampering, and support legal arguments.</p>
+
+<p>Tools like <code class="language-plaintext highlighter-rouge">rmp4_meta</code>, built in fast and safe languages like Rust, are ideal for scalable and automated analysis.</p>
+
+<blockquote>
+  <p><strong>Rust gives you speed and memory safety. Combine that with forensic insight, and you have a powerful tool for digital truth.</strong></p>
+</blockquote>
+
+<hr />
+
+<h2 id="resources">Resources</h2>
+
+<ul>
+  <li><a href="https://crates.io/crates/mp4">mp4 crate on crates.io</a></li>
+  <li>ISO/IEC 14496-12 (MP4 container format spec)</li>
+  <li>Want to extract MP4 metadata in Python? Check out <code class="language-plaintext highlighter-rouge">pymediainfo</code> or <code class="language-plaintext highlighter-rouge">hachoir</code></li>
+</ul>
+
+<hr />
+
+<h2 id="future-enhancements-for-rmp4_meta">Future Enhancements for <code class="language-plaintext highlighter-rouge">rmp4_meta</code></h2>
+
+<ul>
+  <li>Output as JSON (<code class="language-plaintext highlighter-rouge">--json</code>) for scripting</li>
+  <li>Show creation and modification times</li>
+  <li>Detect incomplete or corrupt MP4s</li>
+  <li>Compare multiple MP4s in batch mode</li>
+</ul>
+
+<hr />
+
+<h2 id="contact--contributions">Contact &amp; Contributions</h2>
+
+<p>Have ideas or want to contribute?
+Visit <a href="https://github.com/monterrozagera/rmp4_meta">github.com/monterrozagera/rmp4_meta</a></p>
+
+<hr />

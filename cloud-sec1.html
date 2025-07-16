@@ -1,0 +1,191 @@
+<h1 id="cloud-security-incident-misconfigured-s3-bucket-exposes-sensitive-data">Cloud Security Incident: Misconfigured S3 Bucket Exposes Sensitive Data</h1>
+
+<h2 id="scenario-overview">Scenario Overview</h2>
+
+<p><strong>Company</strong>: [ redacted ]</p>
+
+<p><strong>Cloud Provider</strong>: AWS</p>
+
+<p><strong>Services in Use</strong>: Amazon S3, IAM, Lambda</p>
+
+<p><strong>Security Tooling</strong>: AWS Config, GuardDuty, Custom Lambda Audit Script</p>
+
+<hr />
+
+<h2 id="the-problem">The Problem</h2>
+
+<p>[ redacted ], a financial tech company, uses Amazon S3 to store customer statements and transaction logs. These objects are encrypted and stored in private buckets with access restricted to internal systems via IAM roles.</p>
+
+<p>After deploying a new feature to share customer transaction exports via temporary download links, a DevOps engineer accidentally modified the bucket’s policy to allow <strong>public read access</strong> for testing purposes — and forgot to revert it.</p>
+
+<p>A week later, <strong>GuardDuty</strong> detects multiple anomaly events indicating that IP addresses from multiple countries are accessing the bucket’s contents. Further investigation shows that sensitive data, including partial account numbers and names, was publicly exposed.</p>
+
+<hr />
+
+<h2 id="root-cause">Root Cause</h2>
+
+<p>The bucket policy had the following misconfiguration:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Principal"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"s3:GetObject"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:s3:::fintrust-exports/*"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This <code class="language-plaintext highlighter-rouge">Principal: "*"</code> combined with <code class="language-plaintext highlighter-rouge">s3:GetObject</code> on the entire bucket granted <strong>anonymous users</strong> read access to <strong>all</strong> files.</p>
+
+<hr />
+
+<h2 id="the-solution">The Solution</h2>
+
+<h3 id="1-immediate-fix-revoke-public-access">1. <strong>Immediate Fix: Revoke Public Access</strong></h3>
+
+<p>The DevOps team immediately removed the faulty policy and enabled S3 Block Public Access:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws s3api put-bucket-policy <span class="nt">--bucket</span> fintrust-exports <span class="nt">--policy</span> file://corrected-policy.json
+aws s3api put-public-access-block <span class="nt">--bucket</span> fintrust-exports <span class="nt">--public-access-block-configuration</span> <span class="se">\</span>
+    <span class="nv">BlockPublicAcls</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+    <span class="nv">IgnorePublicAcls</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+    <span class="nv">BlockPublicPolicy</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+    <span class="nv">RestrictPublicBuckets</span><span class="o">=</span><span class="nb">true</span>
+</code></pre></div></div>
+
+<h3 id="2-audit--notification-lambda">2. <strong>Audit &amp; Notification Lambda</strong></h3>
+
+<p>To ensure this never happens again, the security team built a Lambda function triggered by <strong>S3 bucket policy changes</strong> using <strong>CloudTrail</strong> and <strong>EventBridge</strong>.</p>
+
+<p>Here’s a simplified version of the Lambda in Python (using <code class="language-plaintext highlighter-rouge">boto3</code>) that audits new policies and alerts if any public access is granted:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">json</span>
+<span class="kn">import</span> <span class="n">boto3</span>
+
+<span class="k">def</span> <span class="nf">lambda_handler</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="p">.</span><span class="nf">client</span><span class="p">(</span><span class="sh">'</span><span class="s">s3</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">sns</span> <span class="o">=</span> <span class="n">boto3</span><span class="p">.</span><span class="nf">client</span><span class="p">(</span><span class="sh">'</span><span class="s">sns</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="n">bucket_name</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="sh">'</span><span class="s">detail</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">requestParameters</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">bucketName</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">s3</span><span class="p">.</span><span class="nf">get_bucket_policy</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket_name</span><span class="p">)</span>
+    <span class="n">policy</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="sh">'</span><span class="s">Policy</span><span class="sh">'</span><span class="p">])</span>
+    
+    <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">policy</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">Statement</span><span class="sh">'</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="k">if</span> <span class="n">statement</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">Principal</span><span class="sh">'</span><span class="p">)</span> <span class="o">==</span> <span class="sh">"</span><span class="s">*</span><span class="sh">"</span> <span class="ow">and</span> <span class="n">statement</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">Effect</span><span class="sh">'</span><span class="p">)</span> <span class="o">==</span> <span class="sh">"</span><span class="s">Allow</span><span class="sh">"</span><span class="p">:</span>
+            <span class="k">if</span> <span class="sh">"</span><span class="s">s3:GetObject</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">statement</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">Action</span><span class="sh">'</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="c1"># Send alert to Security SNS topic
+</span>                <span class="n">sns</span><span class="p">.</span><span class="nf">publish</span><span class="p">(</span>
+                    <span class="n">TopicArn</span><span class="o">=</span><span class="sh">'</span><span class="s">arn:aws:sns:us-west-2:123456789012:SecurityAlerts</span><span class="sh">'</span><span class="p">,</span>
+                    <span class="n">Subject</span><span class="o">=</span><span class="sh">'</span><span class="s">⚠️ Public Access Alert</span><span class="sh">'</span><span class="p">,</span>
+                    <span class="n">Message</span><span class="o">=</span><span class="sa">f</span><span class="sh">'</span><span class="s">Bucket </span><span class="sh">"</span><span class="si">{</span><span class="n">bucket_name</span><span class="si">}</span><span class="sh">"</span><span class="s"> allows public read access!</span><span class="sh">'</span>
+                <span class="p">)</span>
+                <span class="k">break</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="sh">"</span><span class="s">status</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">checked</span><span class="sh">"</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p>This function ensures that <strong>every bucket policy update</strong> is immediately scanned and alerts are sent if public access is detected.</p>
+
+<h3 id="3-implement-preventive-controls">3. <strong>Implement Preventive Controls</strong></h3>
+
+<ul>
+  <li><strong>Service Control Policies (SCPs)</strong> to deny public S3 bucket policies at the org level.</li>
+  <li><strong>AWS Config Rules</strong> to continuously monitor S3 bucket ACLs and policies.</li>
+  <li><strong>Security Awareness Training</strong> for DevOps teams on secure-by-default configurations.</li>
+</ul>
+
+<hr />
+
+<h2 id="final-outcome">Final Outcome</h2>
+
+<p>Thanks to fast detection and remediation, [ redacted ] minimized the breach impact. The team published an internal postmortem and added automated guardrails across environments to prevent future misconfigurations.</p>
+
+<hr />
+
+<h2 id="takeaways">Takeaways</h2>
+
+<ul>
+  <li><strong>Least privilege</strong> should be enforced at all times — especially for storage.</li>
+  <li><strong>Automation</strong> can significantly reduce human error.</li>
+  <li><strong>Monitoring and alerting</strong> are key in catching misconfigurations early.</li>
+</ul>
+
+<h2 id="corrected-s3-bucket-policy-json"><strong>Corrected S3 Bucket Policy (JSON)</strong></h2>
+
+<p>This policy <strong>only allows access to the bucket for a specific IAM role</strong> (e.g., a Lambda function or EC2 instance), avoiding any public access:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Sid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AllowOnlyTrustedRoleAccess"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Principal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"AWS"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:iam::123456789012:role/FintrustExportReader"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"s3:GetObject"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:s3:::fintrust-exports/*"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<blockquote>
+  <p>Make sure Block Public Access settings are still enabled at the bucket level to enforce security, even with this restrictive policy.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="set-up-eventbridge-rule-to-trigger-lambda-on-s3-bucket-policy-changes"><strong>Set Up EventBridge Rule to Trigger Lambda on S3 Bucket Policy Changes</strong></h2>
+
+<p>You can use the AWS CLI to create the rule that listens for S3 bucket policy changes via CloudTrail and routes them to the auditing Lambda function.</p>
+
+<h3 id="step-a-create-eventbridge-rule"><strong>Step A: Create EventBridge Rule</strong></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws events put-rule <span class="se">\</span>
+  <span class="nt">--name</span> <span class="s2">"DetectS3PublicPolicyChange"</span> <span class="se">\</span>
+  <span class="nt">--event-pattern</span> <span class="s1">'{
+    "source": ["aws.s3"],
+    "detail-type": ["AWS API Call via CloudTrail"],
+    "detail": {
+      "eventSource": ["s3.amazonaws.com"],
+      "eventName": ["PutBucketPolicy"]
+    }
+  }'</span> <span class="se">\</span>
+  <span class="nt">--state</span> ENABLED
+</code></pre></div></div>
+
+<h3 id="step-b-attach-lambda-function-as-target"><strong>Step B: Attach Lambda Function as Target</strong></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws events put-targets <span class="se">\</span>
+  <span class="nt">--rule</span> <span class="s2">"DetectS3PublicPolicyChange"</span> <span class="se">\</span>
+  <span class="nt">--targets</span> <span class="s2">"Id"</span><span class="o">=</span><span class="s2">"1"</span>,<span class="s2">"Arn"</span><span class="o">=</span><span class="s2">"arn:aws:lambda:us-west-2:123456789012:function:S3PolicyAuditLambda"</span>
+</code></pre></div></div>
+
+<h3 id="step-c-give-eventbridge-permission-to-invoke-the-lambda"><strong>Step C: Give EventBridge Permission to Invoke the Lambda</strong></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws lambda add-permission <span class="se">\</span>
+  <span class="nt">--function-name</span> S3PolicyAuditLambda <span class="se">\</span>
+  <span class="nt">--statement-id</span> <span class="s2">"AllowEventBridgeInvoke"</span> <span class="se">\</span>
+  <span class="nt">--action</span> <span class="s2">"lambda:InvokeFunction"</span> <span class="se">\</span>
+  <span class="nt">--principal</span> events.amazonaws.com <span class="se">\</span>
+  <span class="nt">--source-arn</span> <span class="s2">"arn:aws:events:us-west-2:123456789012:rule/DetectS3PublicPolicyChange"</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="final-architecture-flow">Final Architecture Flow</h2>
+
+<ol>
+  <li><strong>DevOps makes a policy change</strong> on S3 bucket.</li>
+  <li><strong>CloudTrail logs the event</strong>, EventBridge detects <code class="language-plaintext highlighter-rouge">PutBucketPolicy</code>.</li>
+  <li>EventBridge <strong>triggers the Lambda</strong> (<code class="language-plaintext highlighter-rouge">S3PolicyAuditLambda</code>).</li>
+  <li>Lambda <strong>analyzes the new policy</strong>.</li>
+  <li>If the policy allows public access, it <strong>sends an SNS alert</strong> to the security team.</li>
+</ol>
+
+<hr />

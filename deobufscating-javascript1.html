@@ -1,0 +1,211 @@
+<h1 id="understanding-javascript-deobfuscation">Understanding JavaScript Deobfuscation</h1>
+
+<h2 id="what-is-javascript-deobfuscation">What is JavaScript Deobfuscation?</h2>
+
+<p>JavaScript <strong>deobfuscation</strong> is the process of <strong>reverse-engineering obfuscated (intentionally scrambled or disguised) JavaScript code</strong> to understand its true functionality. It’s a critical skill in malware analysis, reverse engineering, and web application security.</p>
+
+<p>Many threat actors use obfuscation to:</p>
+
+<ul>
+  <li>Hide malicious behavior (e.g. data theft, XSS).</li>
+  <li>Avoid detection by antivirus or firewalls.</li>
+  <li>Slow down reverse engineering.</li>
+</ul>
+
+<hr />
+
+<h2 id="why-is-javascript-obfuscated">Why is JavaScript Obfuscated?</h2>
+
+<p>Here’s an example of <strong>obfuscated code</strong>:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">_0xabc1</span><span class="p">){</span><span class="kd">var</span> <span class="nx">_0x1c2d</span><span class="o">=</span><span class="p">[</span><span class="dl">"</span><span class="s2">log</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">Hello</span><span class="se">\</span><span class="s2">x20World!</span><span class="dl">"</span><span class="p">];</span><span class="nx">console</span><span class="p">[</span><span class="nx">_0x1c2d</span><span class="p">[</span><span class="mi">0</span><span class="p">]](</span><span class="nx">_0x1c2d</span><span class="p">[</span><span class="mi">1</span><span class="p">]);})();</span>
+</code></pre></div></div>
+
+<p>This is <strong>confusing on purpose</strong>, but all it does is:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Hello World!</span><span class="dl">"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="tools--techniques-for-deobfuscation">Tools &amp; Techniques for Deobfuscation</h2>
+
+<p>Deobfuscation is both <strong>art and science</strong>. Here are common methods and tools used:</p>
+
+<h3 id="1-manual-analysis">1. Manual Analysis</h3>
+
+<p>Use your brain + <code class="language-plaintext highlighter-rouge">console.log()</code> to observe behavior step-by-step.</p>
+
+<h3 id="2-pretty-printing-beautifying">2. Pretty-Printing (Beautifying)</h3>
+
+<p>Use tools like:</p>
+
+<ul>
+  <li><a href="https://prettier.io/">Prettier</a></li>
+  <li><a href="https://beautifier.io/">JSBeautifier</a></li>
+  <li>VS Code Format Document</li>
+</ul>
+
+<p>Before:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">){</span><span class="nf">a</span><span class="p">();})(</span><span class="kd">function</span><span class="p">(){</span><span class="nf">alert</span><span class="p">(</span><span class="dl">'</span><span class="s1">hi</span><span class="dl">'</span><span class="p">)});</span>
+</code></pre></div></div>
+
+<p>After:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nf">a</span><span class="p">();</span>
+<span class="p">})(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nf">alert</span><span class="p">(</span><span class="dl">'</span><span class="s1">hi</span><span class="dl">'</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<h3 id="3-variable-renaming">3. Variable Renaming</h3>
+
+<p>Rename misleading variables like <code class="language-plaintext highlighter-rouge">_0xabc1</code>, <code class="language-plaintext highlighter-rouge">_x12</code>, etc., into something readable.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Original</span>
+<span class="kd">var</span> <span class="nx">_0x1c2d</span> <span class="o">=</span> <span class="p">[</span><span class="dl">"</span><span class="s2">log</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Data stolen</span><span class="dl">"</span><span class="p">];</span>
+<span class="nx">console</span><span class="p">[</span><span class="nx">_0x1c2d</span><span class="p">[</span><span class="mi">0</span><span class="p">]](</span><span class="nx">_0x1c2d</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+
+<span class="c1">// After rename</span>
+<span class="kd">var</span> <span class="nx">actions</span> <span class="o">=</span> <span class="p">[</span><span class="dl">"</span><span class="s2">log</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Data stolen</span><span class="dl">"</span><span class="p">];</span>
+<span class="nx">console</span><span class="p">[</span><span class="nx">actions</span><span class="p">[</span><span class="mi">0</span><span class="p">]](</span><span class="nx">actions</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</code></pre></div></div>
+
+<h3 id="4-evaluate-and-rewrite">4. Evaluate and Rewrite</h3>
+
+<p>Use the browser console or Node.js to evaluate:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">eval</span><span class="p">(</span><span class="dl">"</span><span class="s2">console.log('Secret');</span><span class="dl">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Replace <code class="language-plaintext highlighter-rouge">eval()</code> with a direct value when possible:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Instead of:</span>
+<span class="nf">eval</span><span class="p">(</span><span class="dl">"</span><span class="s2">var x = 1 + 2;</span><span class="dl">"</span><span class="p">);</span>
+<span class="c1">// Deobfuscate to:</span>
+<span class="kd">var</span> <span class="nx">x</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="real-world-example">Real-World Example</h2>
+
+<h3 id="obfuscated-javascript-typical-web-skimmer">Obfuscated JavaScript (typical web skimmer):</h3>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">_0xabc1</span> <span class="o">=</span> <span class="p">[</span><span class="dl">"</span><span class="s2">fromCharCode</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">charCodeAt</span><span class="dl">"</span><span class="p">];</span>
+<span class="kd">var</span> <span class="nx">secret</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">hftu</span><span class="dl">"</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="dl">''</span><span class="p">).</span><span class="nf">map</span><span class="p">(</span><span class="nx">c</span> <span class="o">=&gt;</span> <span class="nb">String</span><span class="p">[</span><span class="nx">_0xabc1</span><span class="p">[</span><span class="mi">0</span><span class="p">]](</span><span class="nx">c</span><span class="p">[</span><span class="nx">_0xabc1</span><span class="p">[</span><span class="mi">1</span><span class="p">]]()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)).</span><span class="nf">join</span><span class="p">(</span><span class="dl">''</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="nx">secret</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="step-by-step">Step-by-step:</h3>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">fromCharCode</code> and <code class="language-plaintext highlighter-rouge">charCodeAt</code> are used dynamically.</li>
+  <li><code class="language-plaintext highlighter-rouge">"hftu"</code> is <code class="language-plaintext highlighter-rouge">'test'</code>, but obfuscated by incrementing each char code by 1.</li>
+  <li>Deobfuscated:</li>
+</ol>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">secret</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">test</span><span class="dl">"</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="nx">secret</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="deobfuscation-code-snippet">Deobfuscation Code Snippet</h2>
+
+<p>Here’s a simple script to help deobfuscate hex-encoded strings:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">function</span> <span class="nf">hexDecode</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">str</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="sr">/</span><span class="se">\\</span><span class="sr">x</span><span class="se">([</span><span class="sr">0-9A-Fa-f</span><span class="se">]{2})</span><span class="sr">/g</span><span class="p">,</span> <span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">hex</span><span class="p">)</span> <span class="o">=&gt;</span>
+    <span class="nb">String</span><span class="p">.</span><span class="nf">fromCharCode</span><span class="p">(</span><span class="nf">parseInt</span><span class="p">(</span><span class="nx">hex</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">input</span> <span class="o">=</span> <span class="dl">"</span><span class="se">\\</span><span class="s2">x61</span><span class="se">\\</span><span class="s2">x6C</span><span class="se">\\</span><span class="s2">x65</span><span class="se">\\</span><span class="s2">x72</span><span class="se">\\</span><span class="s2">x74</span><span class="se">\\</span><span class="s2">x28</span><span class="se">\\</span><span class="s2">x27</span><span class="se">\\</span><span class="s2">x68</span><span class="se">\\</span><span class="s2">x69</span><span class="se">\\</span><span class="s2">x27</span><span class="se">\\</span><span class="s2">x29</span><span class="dl">"</span><span class="p">;</span>
+<span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="nf">hexDecode</span><span class="p">(</span><span class="nx">input</span><span class="p">));</span> <span class="c1">// outputs: alert('hi')</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="use-cases-in-security">Use Cases in Security</h2>
+
+<ul>
+  <li>Malware deobfuscation (malicious scripts hidden on websites).</li>
+  <li>Understanding web skimmers (Magecart).</li>
+  <li>Reverse engineering browser exploits.</li>
+  <li>Auditing third-party scripts.</li>
+  <li>Detecting crypto miners or iframe injections.</li>
+</ul>
+
+<hr />
+
+<h2 id="dangers-of-eval-and-function">Dangers of <code class="language-plaintext highlighter-rouge">eval()</code> and <code class="language-plaintext highlighter-rouge">Function()</code></h2>
+
+<p>Obfuscated code often uses:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">eval</span><span class="p">(</span><span class="dl">"</span><span class="s2">code here</span><span class="dl">"</span><span class="p">);</span>
+<span class="k">new</span> <span class="nc">Function</span><span class="p">(</span><span class="dl">"</span><span class="s2">code</span><span class="dl">"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Always <strong>replace these dynamically</strong> with static equivalents or neutralize them:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// BAD</span>
+<span class="nf">eval</span><span class="p">(</span><span class="dl">"</span><span class="s2">console.log('hidden');</span><span class="dl">"</span><span class="p">);</span>
+
+<span class="c1">// GOOD</span>
+<span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">hidden</span><span class="dl">"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="recommended-tools">Recommended Tools</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="http://www.jsnice.org/">JSNice</a></td>
+      <td>Rename variables intelligently</td>
+    </tr>
+    <tr>
+      <td><a href="https://beautifier.io/">Beautifier.io</a></td>
+      <td>Format ugly JavaScript</td>
+    </tr>
+    <tr>
+      <td>Chrome DevTools</td>
+      <td>Debug and step through code</td>
+    </tr>
+    <tr>
+      <td><a href="https://astexplorer.net/">AST Explorer</a></td>
+      <td>Analyze and transform JavaScript syntax trees</td>
+    </tr>
+    <tr>
+      <td><a href="https://lelinhtinh.github.io/de4js/">Decompiler</a></td>
+      <td>Decode <code class="language-plaintext highlighter-rouge">eval()</code>, <code class="language-plaintext highlighter-rouge">String.fromCharCode</code>, etc.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>JavaScript deobfuscation is an essential skill for anyone in:</p>
+
+<ul>
+  <li>Malware analysis</li>
+  <li>Application security</li>
+  <li>Threat hunting</li>
+  <li>Bug bounty</li>
+</ul>
+
+<p>It requires <strong>patience, curiosity, and tooling</strong>, but over time you’ll develop an instinct for spotting patterns and unraveling even the nastiest code.</p>
+
+<hr />

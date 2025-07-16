@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+    }
+    #vanta-bg {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 2rem;
+    }
+    .glass-box {
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+    }
+    a { color: #0ef; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div id="vanta-bg"></div>
+  <div class="container">
+    <div class="glass-box">
+      <h1 id="gerardo-monterroza">Gerardo Monterroza</h1>
+
+<p><strong>Cybersecurity Engineer • Cloud Tools • Forensics Enthusiast</strong></p>
+
+<p><img src="https://img.shields.io/badge/Python-3.10-blue?logo=python" alt="Python" />
+<img src="https://img.shields.io/badge/Rust-🦀%20Rust-orange?style=flat&amp;logo=rust" alt="Rust" /></p>
+
+<hr />
+
+<h2 id="projects">Projects</h2>
+
+<h3 id="jsdefr"><a href="https://github.com/monterrozagera/JSDeFr">JsDeFr</a></h3>
+<p>the Javascript Deobfuscation framework.</p>
+
+<h3 id="mp4-info"><a href="https://github.com/monterrozagera/mp4-info">mp4-info</a></h3>
+<p>Rust-based CLI to extract metadata from MP4 videos for forensic use.</p>
+
+<h3 id="aws-pyscripts"><a href="https://github.com/monterrozagera/aws-pyscripts">aws-pyscripts</a></h3>
+<p>Python tools to analyze and audit AWS cloud infrastructure security.</p>
+
+<hr />
+
+<h2 id="write-ups">Write-ups</h2>
+
+<p><a href="./cloud-scenario-1.markdown">Cloud Security Incident 1: Misconfigured S3 Bucket Exposes Sensitive Data</a></p>
+
+<p><a href="./cloud-scenario-2.markdown">Cloud Security Incident 2: IAM Privilege Escalation Across AWS Accounts</a></p>
+
+<p><a href="./cloud-scenario-3.markdown">Cloud Security Incident 3: AWS Cloud Intrusion via Compromised CI/CD Pipeline</a></p>
+
+<p><a href="./cloud-security-secure-lambda-functions.markdown">Cloud Security: Secure Lambda Functions</a></p>
+
+<p><a href="./deobufscating-javascript1.html">Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators</a>.</p>
+
+<p><a href="./forensic-analysis-mp4-files.markdown">Forensic Analysis of MP4 Files Using rmp4_meta (Rust)</a></p>
+
+<hr />
+
+<h2 id="about-me">About Me</h2>
+
+<p>I’m Gerardo, a security engineer who builds tools to automate forensic analysis and cloud security audits. My interests include:</p>
+<ul>
+  <li>Digital forensics</li>
+  <li>Threat hunting</li>
+  <li>Rust + Python scripting</li>
+  <li>AWS hardening</li>
+</ul>
+
+<hr />
+
+<h2 id="contact">Contact</h2>
+
+<ul>
+  <li>Email: <a href="mailto:monterrozagerardo@icloud.com">monterrozagerardo@icloud</a></li>
+  <li>LinkedIn: <a href="https://www.linkedin.com/in/gerardo-monterroza-8208aa192">linkedin.com/in/gerardo-monterroza-8208aa192</a></li>
+  <li>GitHub: <a href="https://github.com/monterrozagera">github.com/monterrozagera</a></li>
+</ul>
+
+<h2 id="notes">Notes</h2>
+
+<p><a href="./Learning-Docker/Learning%20Docker.html">Learning Docker - Notes</a></p>
+
+<p><a href="./Learning-Docker/Learning%20Ansible.html">Learning Ansible - Notes</a></p>
+
+<p><a href="./Learning-Docker/Learning%20Puppet.html">Learning Puppet - Notes</a></p>
+
+<p><a href="./Learning-Docker/Learning%20Chef.html">Learning Chef - Notes</a></p>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta/dist/vanta.birds.min.js"></script>
+  
+  <script>
+    VANTA.BIRDS({
+      el: "#vanta-bg",
+      mouseControls: true,
+      touchControls: true,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      backgroundColor: 0x000000
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<h2 id="key-lambda-security-principles">Key Lambda Security Principles</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Best Practice</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>IAM Permissions</strong></td>
+      <td>Use the principle of least privilege.</td>
+    </tr>
+    <tr>
+      <td><strong>Environment Variables</strong></td>
+      <td>Encrypt sensitive data with KMS.</td>
+    </tr>
+    <tr>
+      <td><strong>VPC Settings</strong></td>
+      <td>Attach to private subnets, avoid public internet if not needed.</td>
+    </tr>
+    <tr>
+      <td><strong>Logging</strong></td>
+      <td>Enable CloudWatch Logs, scrub sensitive info.</td>
+    </tr>
+    <tr>
+      <td><strong>Code Safety</strong></td>
+      <td>Validate input, avoid dependency vulnerabilities.</td>
+    </tr>
+    <tr>
+      <td><strong>Triggers</strong></td>
+      <td>Validate sources (e.g., API Gateway or S3 events).</td>
+    </tr>
+    <tr>
+      <td><strong>Timeout &amp; Memory</strong></td>
+      <td>Use minimal values to reduce exposure window.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="secure-lambda-function-example">Secure Lambda Function Example</h2>
+
+<p>Let’s say you have a Lambda that handles a webhook POST request from a third-party API.</p>
+
+<hr />
+
+<h3 id="scenario">Scenario</h3>
+
+<p><strong>Goal</strong>: Validate and log incoming JSON requests from a webhook, then store sanitized data in DynamoDB.</p>
+
+<hr />
+
+<h3 id="1-iam-role-for-lambda-least-privilege">1. IAM Role for Lambda (least privilege)</h3>
+
+<p>Use a role like this (attach via Lambda console or IAM):</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"dynamodb:PutItem"</span><span class="p">],</span><span class="w">
+      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:dynamodb:us-west-2:123456789012:table/SafeWebhookData"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"logs:CreateLogStream"</span><span class="p">,</span><span class="w"> </span><span class="s2">"logs:PutLogEvents"</span><span class="p">],</span><span class="w">
+      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="2-secure-lambda-function-code-nodejs-example">2. Secure Lambda Function Code (Node.js Example)</h3>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="nx">AWS</span> <span class="o">=</span> <span class="nf">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">aws-sdk</span><span class="dl">"</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">dynamo</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AWS</span><span class="p">.</span><span class="nx">DynamoDB</span><span class="p">.</span><span class="nc">DocumentClient</span><span class="p">();</span>
+
+<span class="nx">exports</span><span class="p">.</span><span class="nx">handler</span> <span class="o">=</span> <span class="k">async </span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">try</span> <span class="p">{</span>
+    <span class="k">if </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">httpMethod</span> <span class="o">!==</span> <span class="dl">"</span><span class="s2">POST</span><span class="dl">"</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">statusCode</span><span class="p">:</span> <span class="mi">405</span><span class="p">,</span> <span class="na">body</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Method Not Allowed</span><span class="dl">"</span> <span class="p">};</span>
+    <span class="p">}</span>
+
+    <span class="kd">const</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">parse</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">body</span> <span class="o">||</span> <span class="dl">"</span><span class="s2">{}</span><span class="dl">"</span><span class="p">);</span>
+
+    <span class="k">if </span><span class="p">(</span><span class="o">!</span><span class="nx">data</span><span class="p">.</span><span class="nx">email</span> <span class="o">||</span> <span class="k">typeof</span> <span class="nx">data</span><span class="p">.</span><span class="nx">email</span> <span class="o">!==</span> <span class="dl">"</span><span class="s2">string</span><span class="dl">"</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">statusCode</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="na">body</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Invalid input</span><span class="dl">"</span> <span class="p">};</span>
+    <span class="p">}</span>
+
+    <span class="kd">const</span> <span class="nx">safeData</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">email</span><span class="p">:</span> <span class="nx">data</span><span class="p">.</span><span class="nx">email</span><span class="p">.</span><span class="nf">toLowerCase</span><span class="p">().</span><span class="nf">trim</span><span class="p">(),</span>
+      <span class="na">timestamp</span><span class="p">:</span> <span class="k">new</span> <span class="nc">Date</span><span class="p">().</span><span class="nf">toISOString</span><span class="p">()</span>
+    <span class="p">};</span>
+
+    <span class="k">await</span> <span class="nx">dynamo</span><span class="p">.</span><span class="nf">put</span><span class="p">({</span>
+      <span class="na">TableName</span><span class="p">:</span> <span class="dl">"</span><span class="s2">SafeWebhookData</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">Item</span><span class="p">:</span> <span class="nx">safeData</span>
+    <span class="p">}).</span><span class="nf">promise</span><span class="p">();</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">statusCode</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+      <span class="na">body</span><span class="p">:</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">stringify</span><span class="p">({</span> <span class="na">message</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Success</span><span class="dl">"</span> <span class="p">})</span>
+    <span class="p">};</span>
+
+  <span class="p">}</span> <span class="k">catch </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nf">error</span><span class="p">(</span><span class="dl">"</span><span class="s2">Lambda error:</span><span class="dl">"</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">statusCode</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+      <span class="na">body</span><span class="p">:</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">stringify</span><span class="p">({</span> <span class="na">message</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Internal error</span><span class="dl">"</span> <span class="p">})</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="3-additional-security-tips">3. Additional Security Tips</h3>
+
+<h4 id="environment-variables">Environment Variables</h4>
+
+<p>If you’re using API keys or tokens:</p>
+
+<ul>
+  <li>Use <strong>encrypted environment variables</strong>.</li>
+  <li>Turn on <strong>“Enable helpers for encryption in transit”</strong>.</li>
+  <li>Set <code class="language-plaintext highlighter-rouge">KMS</code> key and use <code class="language-plaintext highlighter-rouge">process.env.SECRET_TOKEN</code> in your code.</li>
+</ul>
+
+<h4 id="input-validation">Input Validation</h4>
+
+<p>Never trust the incoming event blindly:</p>
+
+<ul>
+  <li>Always <code class="language-plaintext highlighter-rouge">JSON.parse</code> with error handling.</li>
+  <li>Whitelist expected fields.</li>
+  <li>Use libraries like <code class="language-plaintext highlighter-rouge">joi</code> or <code class="language-plaintext highlighter-rouge">zod</code> for structured validation (in Node).</li>
+</ul>
+
+<h4 id="api-gateway-source-validation-optional">API Gateway Source Validation (Optional)</h4>
+
+<p>Add a <strong>custom header or HMAC token</strong> to verify the sender:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="dl">'</span><span class="s1">x-api-key</span><span class="dl">'</span><span class="p">]</span> <span class="o">!==</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">EXPECTED_KEY</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">statusCode</span><span class="p">:</span> <span class="mi">403</span><span class="p">,</span> <span class="na">body</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Forbidden</span><span class="dl">"</span> <span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="logging">Logging</h4>
+
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">console.log()</code> for visibility (but avoid logging sensitive data).</li>
+  <li>Configure CloudWatch log retention.</li>
+</ul>
+
+<h4 id="use-lambda-layers">Use Lambda Layers</h4>
+
+<ul>
+  <li>Separate dependencies into layers to reduce attack surface in your code bundle.</li>
+</ul>
+
+<hr />
+
+<h2 id="test-your-lambda-security">Test Your Lambda Security</h2>
+
+<ul>
+  <li><strong>Use AWS IAM Access Analyzer</strong> to review permissions.</li>
+  <li>Simulate IAM access with <code class="language-plaintext highlighter-rouge">sts:SimulatePrincipalPolicy</code>.</li>
+  <li>
+    <p>Scan your deployment package with tools like:</p>
+
+    <ul>
+      <li><a href="https://awslabs.github.io/aws-lambda-powertools/">AWS Lambda Powertools</a></li>
+      <li><a href="https://docs.npmjs.com/cli/v9/commands/npm-audit">npm audit</a></li>
+    </ul>
+  </li>
+</ul>
+
+<hr />

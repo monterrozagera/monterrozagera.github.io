@@ -1,0 +1,164 @@
+<h1 id="cloud-security-incident-iam-privilege-escalation-across-aws-accounts">Cloud Security Incident: IAM Privilege Escalation Across AWS Accounts</h1>
+
+<h2 id="scenario-overview">Scenario Overview</h2>
+
+<p><strong>Company</strong>: [ redacted ]</p>
+
+<p><strong>Cloud Provider</strong>: AWS</p>
+
+<p><strong>Services in Use</strong>: IAM, AWS Organizations, STS, Lambda, CloudTrail, CloudWatch, AWS Config</p>
+
+<p><strong>Security Tooling</strong>: Detective, GuardDuty, Custom STS Log Analyzer Lambda</p>
+
+<hr />
+
+<h2 id="the-problem">The Problem</h2>
+
+<p>[ redacted ] uses a multi-account AWS structure governed by <strong>AWS Organizations</strong>:</p>
+
+<ul>
+  <li><strong>Account A (Dev)</strong>: Developer sandbox</li>
+  <li><strong>Account B (Prod)</strong>: Production services</li>
+  <li><strong>Account C (Security)</strong>: GuardDuty, centralized logging</li>
+</ul>
+
+<p>A developer with access to <strong>Account A</strong> discovers they can assume a role into <strong>Account B</strong> due to overly broad <strong>IAM trust policies</strong> and missing condition checks.</p>
+
+<p>They accidentally run infrastructure scripts in Prod using an elevated role and overwrite production S3 bucket permissions, taking down customer-facing dashboards for two hours.</p>
+
+<hr />
+
+<h2 id="root-cause">Root Cause</h2>
+
+<h3 id="misconfigured-iam-role-trust-policy-in-account-b">Misconfigured IAM Role Trust Policy in Account B:</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Principal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"AWS"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:iam::111111111111:user/dev-john"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sts:AssumeRole"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This policy allows <code class="language-plaintext highlighter-rouge">dev-john</code> (Account A) to assume a <code class="language-plaintext highlighter-rouge">ProdAdminRole</code> in Account B <strong>without proper conditions</strong> like MFA, source IP, or tag checks.</p>
+
+<hr />
+
+<h2 id="the-solution">The Solution</h2>
+
+<h3 id="1-immediate-fix-harden-trust-policies">1. <strong>Immediate Fix: Harden Trust Policies</strong></h3>
+
+<p>The security team rewrote the role trust policy with <strong>tight conditions</strong> and allowed only a federated role from a controlled identity provider:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Principal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"AWS"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:iam::111111111111:role/OrgCrossAccountRole"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sts:AssumeRole"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Condition"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"Bool"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nl">"aws:MultiFactorAuthPresent"</span><span class="p">:</span><span class="w"> </span><span class="s2">"true"</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="nl">"StringEquals"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nl">"aws:PrincipalOrgID"</span><span class="p">:</span><span class="w"> </span><span class="s2">"o-abc123xyz"</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="2-set-up-an-sts-assumerole-monitor-with-lambda">2. <strong>Set Up an STS AssumeRole Monitor with Lambda</strong></h3>
+
+<p>To monitor suspicious cross-account role assumptions, a <strong>CloudTrail trail</strong> was already in place. They added a <strong>Lambda function</strong> triggered by EventBridge to scan all <code class="language-plaintext highlighter-rouge">AssumeRole</code> events and flag unexpected patterns.</p>
+
+<h4 id="lambda-code-snippet">Lambda Code Snippet:</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">json</span>
+<span class="kn">import</span> <span class="n">boto3</span>
+
+<span class="n">SECURITY_ACCOUNTS</span> <span class="o">=</span> <span class="p">[</span><span class="sh">'</span><span class="s">222222222222</span><span class="sh">'</span><span class="p">]</span>  <span class="c1"># security account
+</span><span class="n">ORG_ID</span> <span class="o">=</span> <span class="sh">'</span><span class="s">o-abc123xyz</span><span class="sh">'</span>
+
+<span class="k">def</span> <span class="nf">lambda_handler</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+    <span class="n">detail</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="sh">'</span><span class="s">detail</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">assumed_role</span> <span class="o">=</span> <span class="n">detail</span><span class="p">[</span><span class="sh">'</span><span class="s">requestParameters</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">roleArn</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">source_user</span> <span class="o">=</span> <span class="n">detail</span><span class="p">[</span><span class="sh">'</span><span class="s">userIdentity</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">arn</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">org_id</span> <span class="o">=</span> <span class="n">detail</span><span class="p">[</span><span class="sh">'</span><span class="s">userIdentity</span><span class="sh">'</span><span class="p">].</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">sessionContext</span><span class="sh">'</span><span class="p">,</span> <span class="p">{}).</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">sessionIssuer</span><span class="sh">'</span><span class="p">,</span> <span class="p">{}).</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">orgId</span><span class="sh">'</span><span class="p">,</span> <span class="sh">''</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">org_id</span> <span class="o">!=</span> <span class="n">ORG_ID</span><span class="p">:</span>
+        <span class="n">sns</span> <span class="o">=</span> <span class="n">boto3</span><span class="p">.</span><span class="nf">client</span><span class="p">(</span><span class="sh">'</span><span class="s">sns</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">sns</span><span class="p">.</span><span class="nf">publish</span><span class="p">(</span>
+            <span class="n">TopicArn</span><span class="o">=</span><span class="sh">'</span><span class="s">arn:aws:sns:us-west-2:222222222222:SecurityAlerts</span><span class="sh">'</span><span class="p">,</span>
+            <span class="n">Subject</span><span class="o">=</span><span class="sh">'</span><span class="s">🚨 Unexpected Cross-Account AssumeRole</span><span class="sh">'</span><span class="p">,</span>
+            <span class="n">Message</span><span class="o">=</span><span class="sa">f</span><span class="sh">'</span><span class="s">User </span><span class="si">{</span><span class="n">source_user</span><span class="si">}</span><span class="s"> assumed </span><span class="si">{</span><span class="n">assumed_role</span><span class="si">}</span><span class="s"> from outside expected org </span><span class="si">{</span><span class="n">ORG_ID</span><span class="si">}</span><span class="sh">'</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="sh">"</span><span class="s">status</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">checked</span><span class="sh">"</span><span class="p">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>This script only sends alerts if the assume role event occurs <strong>outside the organization boundary</strong> — helping detect insider threats or misconfigurations.</p>
+</blockquote>
+
+<hr />
+
+<h3 id="3-enforce-scp-guardrails">3. <strong>Enforce SCP Guardrails</strong></h3>
+
+<p>They implemented a <strong>Service Control Policy (SCP)</strong> at the Org level to <strong>explicitly deny cross-account role assumptions unless from known roles</strong>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"Sid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DenyAssumeRoleOutsideTrustedRoles"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Deny"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sts:AssumeRole"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"Condition"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"StringNotEqualsIfExists"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nl">"aws:PrincipalArn"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="s2">"arn:aws:iam::*:role/OrgCrossAccountRole"</span><span class="w">
+          </span><span class="p">]</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="final-outcome">Final Outcome</h2>
+
+<ul>
+  <li>Incident impact was minimized to 2 hours of service disruption.</li>
+  <li>Dev access to prod is now only possible through <strong>federated access via SSO</strong>.</li>
+  <li>The organization added <strong>real-time STS audit logging</strong>.</li>
+  <li>All cross-account trust relationships were validated with <strong>Config Rules</strong>.</li>
+</ul>
+
+<hr />
+
+<h2 id="takeaways">Takeaways</h2>
+
+<ul>
+  <li>Trust policies <strong>must include conditions</strong> like <code class="language-plaintext highlighter-rouge">aws:PrincipalOrgID</code> and <code class="language-plaintext highlighter-rouge">aws:MultiFactorAuthPresent</code>.</li>
+  <li><strong>SCPs and federated access</strong> should enforce strict boundaries across accounts.</li>
+  <li><strong>Real-time detection and notification</strong> can reduce damage during IAM misuse.</li>
+  <li>Review all <strong>AssumeRole permissions and trust relationships</strong> in any multi-account AWS environment.</li>
+</ul>
+
+<hr />
