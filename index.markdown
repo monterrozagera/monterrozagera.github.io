@@ -34,6 +34,8 @@ Python tools to analyze and audit AWS cloud infrastructure security.
 
 [Cloud Security Incident 3: AWS Cloud Intrusion via Compromised CI/CD Pipeline](./cloud-scenario-3.markdown)
 
+[Automating Immutable Infrastructure with Ansible and AWS AMI Baking](./automating-infra-ansible-aws-ami.markdown)
+
 [Cloud Security: Secure Lambda Functions](./cloud-security-secure-lambda-functions.markdown)
 
 [Deobfuscating Javascript Ch.1 - Identifying Malicious Indicators](./deobufscating-javascript1.html).
