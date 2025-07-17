@@ -1,188 +1,176 @@
-<h1 id="automating-immutable-infrastructure-with-ansible-and-aws-ami-baking">Automating Immutable Infrastructure with Ansible and AWS AMI Baking</h1>
+<h1 id="immutable-infrastructure-with-ansible-packer--terraform-on-aws">Immutable Infrastructure with Ansible, Packer &amp; Terraform on AWS</h1>
 
-<p>In modern DevOps and cloud security practices, building <strong>immutable infrastructure</strong> is a core strategy for ensuring predictable, secure, and consistent deployments. One advanced use case is <strong>automating the creation of preconfigured AMIs (Amazon Machine Images)</strong> using <strong>Ansible</strong>. These AMIs can be deployed at scale without needing to reconfigure systems at boot time.</p>
-
-<p>In this article, we’ll walk through how to:</p>
+<p>Building secure and consistent infrastructure doesn’t end with baking an AMI — you need a scalable way to <strong>deploy</strong> it across environments. In this advanced follow-up, we’ll extend our previous AWS + Ansible AMI baking setup by using <strong>Terraform</strong> to:</p>
 
 <ul>
-  <li>Use <strong>Ansible</strong> to configure EC2 instances.</li>
-  <li>Automate <strong>AMI baking</strong> using <strong>Packer</strong> and Ansible.</li>
-  <li>Ensure repeatable and secure server provisioning.</li>
+  <li>Deploy infrastructure based on our <strong>prebaked AMIs</strong></li>
+  <li>Automate <strong>networking, EC2 instances</strong>, and <strong>tags</strong></li>
+  <li>Manage deployments as <strong>code with version control</strong></li>
 </ul>
 
 <hr />
 
-<h2 id="tools-required">Tools Required</h2>
-
-<ul>
-  <li><strong>Ansible</strong></li>
-  <li><strong>HashiCorp Packer</strong></li>
-  <li><strong>AWS CLI</strong> or credentials</li>
-  <li>An existing <strong>IAM role/user</strong> with <code class="language-plaintext highlighter-rouge">ec2:CreateImage</code>, <code class="language-plaintext highlighter-rouge">ec2:RunInstances</code>, etc.</li>
-</ul>
-
-<hr />
-
-<h2 id="why-use-immutable-infrastructure">Why Use Immutable Infrastructure?</h2>
-
-<p>With immutable infrastructure, you don’t patch or modify live servers — instead, you bake changes into a new image and deploy it. This:</p>
-
-<ul>
-  <li>Reduces configuration drift</li>
-  <li>Ensures faster recovery and deployment</li>
-  <li>Enables better security auditing</li>
-</ul>
-
-<hr />
-
-<h2 id="step-by-step-automating-ami-baking-with-ansible">Step-by-Step: Automating AMI Baking with Ansible</h2>
-
-<h3 id="1-project-structure">1. Project Structure</h3>
-
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws-ami-baking/
-├── packer-template.json
-├── ansible/
-│   ├── playbook.yml
-│   └── roles/
-│       └── harden/
-│           └── tasks/main.yml
-</code></pre></div></div>
-
-<hr />
-
-<h3 id="2-sample-packer-template-packer-templatejson">2. Sample Packer Template (<code class="language-plaintext highlighter-rouge">packer-template.json</code>)</h3>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"variables"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"aws_region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-west-2"</span><span class="w">
-  </span><span class="p">},</span><span class="w">
-  </span><span class="nl">"builders"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w">
-    </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"amazon-ebs"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"source_ami_filter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"filters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-        </span><span class="nl">"virtualization-type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hvm"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ubuntu/images/*ubuntu-20.04-amd64-server-*"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"root-device-type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ebs"</span><span class="w">
-      </span><span class="p">},</span><span class="w">
-      </span><span class="nl">"owners"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"099720109477"</span><span class="p">],</span><span class="w">
-      </span><span class="nl">"most_recent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-    </span><span class="p">},</span><span class="w">
-    </span><span class="nl">"instance_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"t2.micro"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"ssh_username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ubuntu"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"ami_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"secure-ami-"</span><span class="w">
-  </span><span class="p">}],</span><span class="w">
-  </span><span class="nl">"provisioners"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w">
-    </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ansible"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"playbook_file"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ansible/playbook.yml"</span><span class="w">
-  </span><span class="p">}]</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div></div>
-
-<hr />
-
-<h3 id="3-ansible-playbook-ansibleplaybookyml">3. Ansible Playbook (<code class="language-plaintext highlighter-rouge">ansible/playbook.yml</code>)</h3>
-
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Harden and prepare AMI</span>
-  <span class="na">hosts</span><span class="pi">:</span> <span class="s">all</span>
-  <span class="na">become</span><span class="pi">:</span> <span class="kc">true</span>
-  <span class="na">roles</span><span class="pi">:</span>
-    <span class="pi">-</span> <span class="s">harden</span>
-</code></pre></div></div>
-
-<hr />
-
-<h3 id="4-security-hardening-role-roleshardentasksmainyml">4. Security Hardening Role (<code class="language-plaintext highlighter-rouge">roles/harden/tasks/main.yml</code>)</h3>
-
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">---</span>
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Update all packages</span>
-  <span class="na">apt</span><span class="pi">:</span>
-    <span class="na">upgrade</span><span class="pi">:</span> <span class="s">dist</span>
-    <span class="na">update_cache</span><span class="pi">:</span> <span class="s">yes</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Install essential packages</span>
-  <span class="na">apt</span><span class="pi">:</span>
-    <span class="na">name</span><span class="pi">:</span> <span class="pi">[</span><span class="s1">'</span><span class="s">fail2ban'</span><span class="pi">,</span> <span class="s1">'</span><span class="s">ufw'</span><span class="pi">,</span> <span class="s1">'</span><span class="s">unattended-upgrades'</span><span class="pi">]</span>
-    <span class="na">state</span><span class="pi">:</span> <span class="s">present</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Enable UFW firewall</span>
-  <span class="na">ufw</span><span class="pi">:</span>
-    <span class="na">state</span><span class="pi">:</span> <span class="s">enabled</span>
-    <span class="na">policy</span><span class="pi">:</span> <span class="s">deny</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Allow SSH through firewall</span>
-  <span class="na">ufw</span><span class="pi">:</span>
-    <span class="na">rule</span><span class="pi">:</span> <span class="s">allow</span>
-    <span class="na">port</span><span class="pi">:</span> <span class="s1">'</span><span class="s">22'</span>
-    <span class="na">proto</span><span class="pi">:</span> <span class="s">tcp</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Disable root SSH login</span>
-  <span class="na">lineinfile</span><span class="pi">:</span>
-    <span class="na">path</span><span class="pi">:</span> <span class="s">/etc/ssh/sshd_config</span>
-    <span class="na">regexp</span><span class="pi">:</span> <span class="s1">'</span><span class="s">^PermitRootLogin'</span>
-    <span class="na">line</span><span class="pi">:</span> <span class="s1">'</span><span class="s">PermitRootLogin</span><span class="nv"> </span><span class="s">no'</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Ensure SSH uses protocol </span><span class="m">2</span>
-  <span class="na">lineinfile</span><span class="pi">:</span>
-    <span class="na">path</span><span class="pi">:</span> <span class="s">/etc/ssh/sshd_config</span>
-    <span class="na">regexp</span><span class="pi">:</span> <span class="s1">'</span><span class="s">^Protocol'</span>
-    <span class="na">line</span><span class="pi">:</span> <span class="s1">'</span><span class="s">Protocol</span><span class="nv"> </span><span class="s">2'</span>
-
-<span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Reboot system (optional)</span>
-  <span class="na">reboot</span><span class="pi">:</span>
-    <span class="na">reboot_timeout</span><span class="pi">:</span> <span class="m">600</span>
-</code></pre></div></div>
-
-<hr />
-
-<h2 id="running-the-bake-process">Running the Bake Process</h2>
-
-<p>Make sure you have your AWS credentials set via environment variables or config file, then:</p>
-
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>aws-ami-baking/
-packer build <span class="nt">-var</span> <span class="s1">'aws_region=us-west-2'</span> packer-template.json
-</code></pre></div></div>
-
-<p>This will:</p>
+<h2 id="workflow-overview">Workflow Overview</h2>
 
 <ol>
-  <li>Launch a temporary EC2 instance.</li>
-  <li>Run the Ansible playbook to configure it.</li>
-  <li>Create a new AMI from the instance.</li>
-  <li>Terminate the instance.</li>
+  <li>Bake hardened AMIs with Ansible + Packer</li>
+  <li>Upload to AWS with meaningful naming</li>
+  <li>Use Terraform to <strong>deploy</strong> EC2 instances from baked AMIs</li>
 </ol>
 
 <hr />
 
-<h2 id="use-cases">Use Cases</h2>
+<h2 id="directory-structure">Directory Structure</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws-immutable-infra/
+├── packer/
+│   └── packer-template.json
+├── ansible/
+│   └── playbook.yml
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="terraform-maintf">Terraform: main.tf</h2>
+
+<p>This file deploys an EC2 instance using the <strong>latest baked AMI</strong> filtered by name and tag.</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="o">=</span> <span class="nx">var</span><span class="p">.</span><span class="nx">aws_region</span>
+<span class="p">}</span>
+
+<span class="nx">data</span> <span class="s2">"aws_ami"</span> <span class="s2">"secure_ami"</span> <span class="p">{</span>
+  <span class="nx">most_recent</span> <span class="o">=</span> <span class="kc">true</span>
+  <span class="nx">owners</span>      <span class="o">=</span> <span class="p">[</span><span class="s2">"self"</span><span class="p">]</span>
+
+  <span class="nx">filter</span> <span class="p">{</span>
+    <span class="nx">name</span>   <span class="o">=</span> <span class="s2">"name"</span>
+    <span class="nx">values</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"secure-ami-*"</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"hardened_ec2"</span> <span class="p">{</span>
+  <span class="nx">ami</span>                         <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">aws_ami</span><span class="p">.</span><span class="nx">secure_ami</span><span class="p">.</span><span class="nx">id</span>
+  <span class="nx">instance_type</span>               <span class="o">=</span> <span class="nx">var</span><span class="p">.</span><span class="nx">instance_type</span>
+  <span class="nx">subnet_id</span>                   <span class="o">=</span> <span class="nx">var</span><span class="p">.</span><span class="nx">subnet_id</span>
+  <span class="nx">associate_public_ip_address</span> <span class="o">=</span> <span class="kc">true</span>
+
+  <span class="nx">vpc_security_group_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nx">var</span><span class="p">.</span><span class="nx">security_group_id</span><span class="p">]</span>
+  <span class="nx">key_name</span>               <span class="o">=</span> <span class="nx">var</span><span class="p">.</span><span class="nx">key_name</span>
+
+  <span class="nx">tags</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">Name</span>        <span class="o">=</span> <span class="s2">"SecureInstance"</span>
+    <span class="nx">Environment</span> <span class="o">=</span> <span class="s2">"Production"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="variablestf">variables.tf</h2>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"aws_region"</span> <span class="p">{</span>
+  <span class="nx">default</span> <span class="o">=</span> <span class="s2">"us-west-2"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"instance_type"</span> <span class="p">{</span>
+  <span class="nx">default</span> <span class="o">=</span> <span class="s2">"t2.micro"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"subnet_id"</span> <span class="p">{}</span>
+<span class="nx">variable</span> <span class="s2">"security_group_id"</span> <span class="p">{}</span>
+<span class="nx">variable</span> <span class="s2">"key_name"</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="outputstf">outputs.tf</h2>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"instance_public_ip"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="o">=</span> <span class="nx">aws_instance</span><span class="p">.</span><span class="nx">hardened_ec2</span><span class="p">.</span><span class="nx">public_ip</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="security-group-and-subnet-example-optional">Security Group and Subnet Example (Optional)</h2>
+
+<p>If you don’t already have infrastructure to plug into, you can add:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_vpc"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">cidr_block</span> <span class="o">=</span> <span class="s2">"10.0.0.0/16"</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span>     <span class="o">=</span> <span class="nx">aws_vpc</span><span class="p">.</span><span class="nx">main</span><span class="p">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span> <span class="o">=</span> <span class="s2">"10.0.1.0/24"</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"ssh_only"</span> <span class="p">{</span>
+  <span class="nx">name</span>        <span class="o">=</span> <span class="s2">"allow_ssh"</span>
+  <span class="nx">description</span> <span class="o">=</span> <span class="s2">"Allow SSH"</span>
+  <span class="nx">vpc_id</span>      <span class="o">=</span> <span class="nx">aws_vpc</span><span class="p">.</span><span class="nx">main</span><span class="p">.</span><span class="nx">id</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="o">=</span> <span class="mi">22</span>
+    <span class="nx">to_port</span>     <span class="o">=</span> <span class="mi">22</span>
+    <span class="nx">protocol</span>    <span class="o">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">cidr_blocks</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+  <span class="p">}</span>
+
+  <span class="nx">egress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="o">=</span> <span class="mi">0</span>
+    <span class="nx">to_port</span>     <span class="o">=</span> <span class="mi">0</span>
+    <span class="nx">protocol</span>    <span class="o">=</span> <span class="s2">"-1"</span>
+    <span class="nx">cidr_blocks</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="full-flow-bake-and-deploy">Full Flow: Bake and Deploy</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Step 1: Bake AMI</span>
+<span class="nb">cd </span>packer
+packer build packer-template.json
+
+<span class="c"># Step 2: Deploy infrastructure</span>
+<span class="nb">cd</span> ../terraform
+terraform init
+terraform apply <span class="nt">-auto-approve</span> <span class="se">\</span>
+  <span class="nt">-var</span> <span class="s1">'subnet_id=subnet-xxxx'</span> <span class="se">\</span>
+  <span class="nt">-var</span> <span class="s1">'security_group_id=sg-xxxx'</span> <span class="se">\</span>
+  <span class="nt">-var</span> <span class="s1">'key_name=my-ssh-key'</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="why-this-is-powerful">Why This Is Powerful</h2>
 
 <ul>
-  <li><strong>Security-hardened base images</strong> for production</li>
-  <li><strong>Golden images</strong> for CI/CD pipelines</li>
-  <li><strong>Incident recovery</strong> via consistent AMI deployment</li>
-  <li><strong>Cloud forensics</strong>: pre-bake investigation tools and logging agents</li>
+  <li><strong>Consistency</strong>: AMI is configured once, reused many times.</li>
+  <li><strong>Security</strong>: Hardened at the image level before deployment.</li>
+  <li><strong>Reproducibility</strong>: Deploy the same infra with the same config.</li>
+  <li><strong>Auditing</strong>: Infrastructure changes are tracked in Git.</li>
 </ul>
 
 <hr />
 
-<h2 id="security-tips">Security Tips</h2>
+<h2 id="bonus-ideas">Bonus Ideas</h2>
 
 <ul>
-  <li>Bake in <strong>CIS benchmark settings</strong> using community roles</li>
-  <li>Preinstall <strong>CloudWatch Agents</strong> for logging</li>
-  <li>Store AMI creation logs and hashes for <strong>forensic reproducibility</strong></li>
+  <li>Add <strong>Ansible roles</strong> for vulnerability scanning (e.g. OpenSCAP).</li>
+  <li>Use <strong>Terraform Cloud</strong> or <strong>GitHub Actions</strong> for CI/CD.</li>
+  <li>Register your AMI in <strong>multiple regions</strong> using <code class="language-plaintext highlighter-rouge">aws_ami_copy</code>.</li>
 </ul>
 
 <hr />
 
-<h2 id="final-thoughts">Final Thoughts</h2>
+<h2 id="summary">Summary</h2>
 
-<p>Automating secure, immutable infrastructure with Ansible and Packer is a powerful way to bring DevSecOps practices to AWS environments. It ensures repeatability, improves security posture, and reduces configuration drift in live systems.</p>
-
-<p>You can extend this by:</p>
-
-<ul>
-  <li>Using <strong>Terraform</strong> to deploy AMIs</li>
-  <li>Adding <strong>Molecule</strong> tests to your Ansible roles</li>
-  <li>Integrating with <strong>GitHub Actions</strong> or other CI tools</li>
-</ul>
+<p>By combining <strong>Ansible + Packer + Terraform</strong>, you get a fully automated and secure path from configuration to deployment — the foundation of immutable, production-grade infrastructure on AWS.</p>
