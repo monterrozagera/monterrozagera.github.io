@@ -71,3 +71,5 @@ I’m Gerardo, a security engineer who builds tools to automate forensic analysi
 [Learning Puppet - Notes](./Learning-Docker/Learning%20Puppet.html)
 
 [Learning Chef - Notes](./Learning-Docker/Learning%20Chef.html)
+
+[Learning Terraform - Notes](./notes/learning-terraform.markdown)
