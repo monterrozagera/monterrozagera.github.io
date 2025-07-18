@@ -1,0 +1,139 @@
+<h2 id="learning-terraform">Learning Terraform</h2>
+
+<p>Terraform is an <strong>Infrastructure as Code (IaC)</strong> tool designed to help <strong>provision, manage, and version cloud infrastructure</strong> using declarative configuration files.</p>
+
+<p>It supports a wide range of providers (AWS, Azure, GCP, etc.) and enables managing <strong>resources in a consistent, repeatable, and automated</strong> way.</p>
+
+<hr />
+
+<h3 id="basic-concepts">Basic Concepts</h3>
+
+<h4 id="providers">Providers</h4>
+
+<p>Define the platform you’re interacting with (AWS, Azure, etc.).</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="o">=</span> <span class="s2">"us-west-2"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="resources">Resources</h4>
+
+<p>Define the actual infrastructure you want to create.</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">ami</span>           <span class="o">=</span> <span class="s2">"ami-0c55b159cbfafe1f0"</span>
+  <span class="nx">instance_type</span> <span class="o">=</span> <span class="s2">"t2.micro"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="variables">Variables</h4>
+
+<p>Allow dynamic input into your configuration.</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"region"</span> <span class="p">{</span>
+  <span class="nx">default</span> <span class="o">=</span> <span class="s2">"us-west-2"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="outputs">Outputs</h4>
+
+<p>Return values from your Terraform configuration.</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"instance_ip"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="o">=</span> <span class="nx">aws_instance</span><span class="p">.</span><span class="nx">web</span><span class="p">.</span><span class="nx">public_ip</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="example-creating-an-ec2-instance">Example: Creating an EC2 Instance</h3>
+
+<ol>
+  <li><strong>main.tf</strong></li>
+</ol>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="o">=</span> <span class="nx">var</span><span class="p">.</span><span class="nx">region</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"example"</span> <span class="p">{</span>
+  <span class="nx">ami</span>           <span class="o">=</span> <span class="s2">"ami-0c55b159cbfafe1f0"</span>
+  <span class="nx">instance_type</span> <span class="o">=</span> <span class="s2">"t2.micro"</span>
+  <span class="nx">tags</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="o">=</span> <span class="s2">"ExampleInstance"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li><strong>variables.tf</strong></li>
+</ol>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"region"</span> <span class="p">{</span>
+  <span class="nx">default</span> <span class="o">=</span> <span class="s2">"us-west-2"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li><strong>outputs.tf</strong></li>
+</ol>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"public_ip"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="o">=</span> <span class="nx">aws_instance</span><span class="p">.</span><span class="nx">example</span><span class="p">.</span><span class="nx">public_ip</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="workflow">Workflow</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terraform init      <span class="c"># Initialize the working directory</span>
+terraform plan      <span class="c"># Show what Terraform will do</span>
+terraform apply     <span class="c"># Apply the configuration and create resources</span>
+terraform destroy   <span class="c"># Tear down the resources</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="modules">Modules</h3>
+
+<p>Terraform modules are reusable pieces of code that help you organize and scale your infrastructure.</p>
+
+<p>Example of calling a module:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
+  <span class="nx">source</span>  <span class="o">=</span> <span class="s2">"terraform-aws-modules/vpc/aws"</span>
+  <span class="nx">version</span> <span class="o">=</span> <span class="s2">"4.0.0"</span>
+
+  <span class="nx">name</span> <span class="o">=</span> <span class="s2">"my-vpc"</span>
+  <span class="nx">cidr</span> <span class="o">=</span> <span class="s2">"10.0.0.0/16"</span>
+
+  <span class="nx">azs</span>             <span class="o">=</span> <span class="p">[</span><span class="s2">"us-west-2a"</span><span class="p">,</span> <span class="s2">"us-west-2b"</span><span class="p">]</span>
+  <span class="nx">public_subnets</span>  <span class="o">=</span> <span class="p">[</span><span class="s2">"10.0.1.0/24"</span><span class="p">,</span> <span class="s2">"10.0.2.0/24"</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="best-practices">Best Practices</h3>
+
+<ul>
+  <li>Use remote backends (e.g., S3 + DynamoDB for AWS) for shared state</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">terraform fmt</code> and <code class="language-plaintext highlighter-rouge">terraform validate</code> before committing</li>
+  <li>Break infrastructure into <strong>environments</strong> (dev/staging/prod)</li>
+  <li>Keep secrets in secure tools like AWS Secrets Manager or Vault</li>
+  <li>Use modules to avoid repetition</li>
+</ul>
+
+<hr />
+
+<h3 id="real-world-use-cases">Real-World Use Cases</h3>
+
+<ul>
+  <li>Provision AWS infrastructure: EC2, VPC, RDS, S3, IAM</li>
+  <li>Automate GCP or Azure environments</li>
+  <li>Integrate with CI/CD pipelines (GitHub Actions, Jenkins)</li>
+  <li>Spin up test environments automatically</li>
+  <li>Reuse and version environments across multiple teams</li>
+</ul>
