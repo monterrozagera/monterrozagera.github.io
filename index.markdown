@@ -28,6 +28,8 @@ Python tools to analyze and audit AWS cloud infrastructure security.
 
 ## Write-ups
 
+[High-Availability Active Directory Federation Services (AD FS) Infrastructure (Windows, Ansible, Terraform, AWS)](./ad-fs.markdown)
+
 [Cloud Security Incident 1: Misconfigured S3 Bucket Exposes Sensitive Data](./cloud-scenario-1.markdown)
 
 [Cloud Security Incident 2: IAM Privilege Escalation Across AWS Accounts](./cloud-scenario-2.markdown)
