@@ -1,0 +1,383 @@
+<h1 id="high-availability-active-directory-federation-services-ad-fs-infrastructure">High-Availability Active Directory Federation Services (AD FS) Infrastructure</h1>
+
+<h3 id="scenario-overview">Scenario Overview</h3>
+<p>A multinational organization needs a secure SSO solution using Active Directory Federation Services (AD FS) to enable seamless access to cloud and on-premises applications. The infrastructure must be highly available, support external access, and include disaster recovery mechanisms. The solution should span multiple geographic locations and comply with enterprise security standards.</p>
+
+<hr />
+
+<h3 id="prerequisites">Prerequisites</h3>
+<ol>
+  <li><strong>Environment</strong>:
+    <ul>
+      <li>Multiple Windows Server 2022 instances (minimum 4 for AD FS servers, 2 for proxies, and 2 for domain controllers).</li>
+      <li>Active Directory Domain Services (AD DS) already configured with at least two domain controllers for redundancy.</li>
+      <li>SQL Server instance (e.g., SQL Server 2019) for AD FS configuration database (optional for high availability).</li>
+      <li>Valid SSL certificates from a trusted Certificate Authority (CA) for AD FS and proxies.</li>
+      <li>Network infrastructure with DNS configured and firewall rules allowing necessary ports (e.g., 443 for HTTPS, 49443 for certificate authentication).</li>
+      <li>Public IP or DNS name for external access (e.g., <code class="language-plaintext highlighter-rouge">fs.contoso.com</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Skills/Knowledge</strong>:
+    <ul>
+      <li>Familiarity with Active Directory, DNS, and Group Policy.</li>
+      <li>PowerShell scripting for automation and configuration.</li>
+      <li>Understanding of load balancing (Windows NLB or external hardware/software load balancer).</li>
+      <li>Knowledge of Azure MFA or third-party MFA solutions (optional for MFA integration).</li>
+    </ul>
+  </li>
+  <li><strong>Tools</strong>:
+    <ul>
+      <li>Windows Server 2022 ISO or Azure VMs.</li>
+      <li>PowerShell 7.x for scripting.</li>
+      <li>SQL Server Management Studio (if using SQL Server).</li>
+      <li>Network Load Balancer or external load balancer (e.g., F5, Azure Load Balancer).</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h3 id="step-by-step-implementation">Step-by-Step Implementation</h3>
+
+<h4 id="step-1-plan-the-ad-fs-infrastructure">Step 1: Plan the AD FS Infrastructure</h4>
+<ol>
+  <li><strong>Define Requirements</strong>:
+    <ul>
+      <li><strong>Topology</strong>: Use a farm of AD FS servers for high availability (at least two servers per site for redundancy).</li>
+      <li><strong>Geographic Distribution</strong>: Deploy AD FS servers in two or more data centers (e.g., US and Europe).</li>
+      <li><strong>External Access</strong>: Use AD FS proxy servers (Web Application Proxy) in the DMZ for external users.</li>
+      <li><strong>Database</strong>: Use SQL Server for the AD FS configuration database to enable high availability (Windows Internal Database (WID) is not suitable for multi-site HA).</li>
+      <li><strong>MFA</strong>: Integrate Azure MFA or a third-party solution for enhanced security.</li>
+      <li><strong>Disaster Recovery</strong>: Plan for failover to a secondary site using SQL Server Always On and AD FS configuration replication.</li>
+    </ul>
+  </li>
+  <li><strong>Naming and Networking</strong>:
+    <ul>
+      <li>Choose a federation service name (e.g., <code class="language-plaintext highlighter-rouge">fs.contoso.com</code>).</li>
+      <li>Ensure DNS records resolve internally and externally to the load balancer VIP (Virtual IP).</li>
+      <li>Configure firewall rules to allow HTTPS (443) and certificate authentication (49443) traffic.</li>
+    </ul>
+  </li>
+  <li><strong>Sample Architecture</strong>:
+    <ul>
+      <li><strong>Primary Site (US)</strong>:
+        <ul>
+          <li>2 AD FS servers (ADFSSRV1, ADFSSRV2).</li>
+          <li>1 SQL Server instance for AD FS configuration database.</li>
+          <li>2 Web Application Proxy servers (WAP1, WAP2) in the DMZ.</li>
+          <li>2 Domain Controllers (DC1, DC2).</li>
+        </ul>
+      </li>
+      <li><strong>Secondary Site (Europe)</strong>:
+        <ul>
+          <li>2 AD FS servers (ADFSSRV3, ADFSSRV4).</li>
+          <li>1 SQL Server instance (part of Always On Availability Group).</li>
+          <li>2 Web Application Proxy servers (WAP3, WAP4) in the DMZ.</li>
+          <li>2 Domain Controllers (DC3, DC4).</li>
+        </ul>
+      </li>
+      <li>Load balancer (e.g., Azure Load Balancer or Windows NLB) for both AD FS and WAP servers.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-2-set-up-the-active-directory-environment">Step 2: Set Up the Active Directory Environment</h4>
+<ol>
+  <li><strong>Verify Active Directory</strong>:
+    <ul>
+      <li>Ensure AD DS is healthy with at least two domain controllers per site for redundancy.</li>
+      <li>Run <code class="language-plaintext highlighter-rouge">dcd Immediate Response: dcdiag</code> to check AD health.</li>
+      <li>Create an AD FS service account (e.g., <code class="language-plaintext highlighter-rouge">svc_adfs</code>) with a strong password.</li>
+    </ul>
+  </li>
+  <li><strong>Configure DNS</strong>:
+    <ul>
+      <li>Create an A record for <code class="language-plaintext highlighter-rouge">fs.contoso.com</code> pointing to the load balancer VIP.</li>
+      <li>Create CNAME records for external access if needed.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-3-install-and-configure-ad-fs-servers">Step 3: Install and Configure AD FS Servers</h4>
+<ol>
+  <li><strong>Install AD FS Role</strong>:
+    <ul>
+      <li>On each AD FS server (ADFSSRV1, ADFSSRV2, ADFSSRV3, ADFSSRV4), install the AD FS role:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-WindowsFeature</span><span class="w"> </span><span class="nx">ADFS-Federation</span><span class="w"> </span><span class="nt">-IncludeManagementTools</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Configure the Primary AD FS Server (ADFSSRV1)</strong>:
+    <ul>
+      <li>Use PowerShell to configure the AD FS farm with a SQL Server database:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$cert</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-PfxCertificate</span><span class="w"> </span><span class="nt">-FilePath</span><span class="w"> </span><span class="s2">"C:\Certs\adfs-cert.pfx"</span><span class="w">
+</span><span class="n">Install-AdfsFarm</span><span class="w"> </span><span class="nt">-CertificateThumbprint</span><span class="w"> </span><span class="nv">$cert</span><span class="o">.</span><span class="nf">Thumbprint</span><span class="w"> </span><span class="se">`
+</span><span class="w">                </span><span class="nt">-FederationServiceName</span><span class="w"> </span><span class="s2">"fs.contoso.com"</span><span class="w"> </span><span class="se">`
+</span><span class="w">                </span><span class="nt">-ServiceAccountCredential</span><span class="w"> </span><span class="p">(</span><span class="n">Get-Credential</span><span class="p">)</span><span class="w"> </span><span class="se">`
+</span><span class="w">                </span><span class="nt">-SQLConnectionString</span><span class="w"> </span><span class="s2">"Data Source=SQLSRV1;Initial Catalog=ADFSConfiguration;Integrated Security=True"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Provide the AD FS service account credentials when prompted.</li>
+      <li>Ensure the SSL certificate is installed in the Local Machine store.</li>
+    </ul>
+  </li>
+  <li><strong>Join Additional AD FS Servers to the Farm</strong>:
+    <ul>
+      <li>On ADFSSRV2, ADFSSRV3, and ADFSSRV4, join the existing farm:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$cert</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-PfxCertificate</span><span class="w"> </span><span class="nt">-FilePath</span><span class="w"> </span><span class="s2">"C:\Certs\adfs-cert.pfx"</span><span class="w">
+</span><span class="n">Add-AdfsFarmNode</span><span class="w"> </span><span class="nt">-CertificateThumbprint</span><span class="w"> </span><span class="nv">$cert</span><span class="o">.</span><span class="nf">Thumbprint</span><span class="w"> </span><span class="se">`
+</span><span class="w">                 </span><span class="nt">-SQLConnectionString</span><span class="w"> </span><span class="s2">"Data Source=SQLSRV1;Initial Catalog=ADFSConfiguration;Integrated Security=True"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Verify AD FS Installation</strong>:
+    <ul>
+      <li>Access the AD FS metadata endpoint: <code class="language-plaintext highlighter-rouge">https://fs.contoso.com/federationmetadata/2007-06/federationmetadata.xml</code>.</li>
+      <li>Check the AD FS Management Console to confirm all servers are listed in the farm.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-4-configure-load-balancing">Step 4: Configure Load Balancing</h4>
+<ol>
+  <li><strong>Set Up Windows Network Load Balancing (NLB)</strong>:
+    <ul>
+      <li>Install NLB on ADFSSRV1 and ADFSSRV2:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-WindowsFeature</span><span class="w"> </span><span class="nx">NLB</span><span class="w"> </span><span class="nt">-IncludeManagementTools</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Create an NLB cluster:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">New-NlbCluster</span><span class="w"> </span><span class="nt">-InterfaceName</span><span class="w"> </span><span class="s2">"Ethernet"</span><span class="w"> </span><span class="nt">-ClusterPrimaryIP</span><span class="w"> </span><span class="s2">"192.168.1.100"</span><span class="w"> </span><span class="nt">-ClusterName</span><span class="w"> </span><span class="s2">"ADFSCluster"</span><span class="w">
+</span><span class="n">Add-NlbClusterNode</span><span class="w"> </span><span class="nt">-InterfaceName</span><span class="w"> </span><span class="s2">"Ethernet"</span><span class="w"> </span><span class="nt">-NewNodeName</span><span class="w"> </span><span class="s2">"ADFSSRV2"</span><span class="w"> </span><span class="nt">-NewNodeAddress</span><span class="w"> </span><span class="s2">"192.168.1.102"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Configure port rules to balance traffic on ports 443 and 49443.</li>
+    </ul>
+  </li>
+  <li><strong>Alternative: Use an External Load Balancer</strong>:
+    <ul>
+      <li>Configure an external load balancer (e.g., Azure Load Balancer or F5) with health probes for HTTPS (port 443).</li>
+      <li>Add ADFSSRV1 and ADFSSRV2 as backend pool members.</li>
+    </ul>
+  </li>
+  <li><strong>Repeat for Secondary Site</strong>:
+    <ul>
+      <li>Configure NLB or an external load balancer for ADFSSRV3 and ADFSSRV4 in the secondary site.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-5-set-up-web-application-proxy-wap-for-external-access">Step 5: Set Up Web Application Proxy (WAP) for External Access</h4>
+<ol>
+  <li><strong>Install WAP Role</strong>:
+    <ul>
+      <li>On WAP1 and WAP2 (and WAP3, WAP4 for the secondary site), install the Web Application Proxy role:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-WindowsFeature</span><span class="w"> </span><span class="nx">Web-Application-Proxy</span><span class="w"> </span><span class="nt">-IncludeManagementTools</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Configure WAP</strong>:
+    <ul>
+      <li>Configure each WAP server to connect to the AD FS farm:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$cert</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-PfxCertificate</span><span class="w"> </span><span class="nt">-FilePath</span><span class="w"> </span><span class="s2">"C:\Certs\adfs-cert.pfx"</span><span class="w">
+</span><span class="n">Install-WebApplicationProxy</span><span class="w"> </span><span class="nt">-FederationServiceName</span><span class="w"> </span><span class="s2">"fs.contoso.com"</span><span class="w"> </span><span class="se">`
+</span><span class="w">                            </span><span class="nt">-CertificateThumbprint</span><span class="w"> </span><span class="nv">$cert</span><span class="o">.</span><span class="nf">Thumbprint</span><span class="w"> </span><span class="se">`
+</span><span class="w">                            </span><span class="nt">-FederationServiceTrustCredential</span><span class="w"> </span><span class="p">(</span><span class="n">Get-Credential</span><span class="p">)</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Provide the AD FS service account credentials.</li>
+    </ul>
+  </li>
+  <li><strong>Configure Load Balancing for WAP</strong>:
+    <ul>
+      <li>Set up NLB or an external load balancer for WAP servers, similar to the AD FS servers, using ports 443 and 49443.</li>
+    </ul>
+  </li>
+  <li><strong>Update DNS</strong>:
+    <ul>
+      <li>Ensure the external DNS record for <code class="language-plaintext highlighter-rouge">fs.contoso.com</code> points to the WAP load balancer VIP.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-6-configure-multi-factor-authentication-mfa">Step 6: Configure Multi-Factor Authentication (MFA)</h4>
+<ol>
+  <li><strong>Integrate Azure MFA</strong>:
+    <ul>
+      <li>Register the AD FS farm with Azure AD:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Register-AdfsAzureMfa</span><span class="w"> </span><span class="nt">-TenantId</span><span class="w"> </span><span class="s2">"your-tenant-id"</span><span class="w"> </span><span class="nt">-ClientId</span><span class="w"> </span><span class="s2">"your-client-id"</span><span class="w"> </span><span class="nt">-ClientSecret</span><span class="w"> </span><span class="s2">"your-client-secret"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Enable MFA in AD FS:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-AdfsGlobalAuthenticationPolicy</span><span class="w"> </span><span class="nt">-AdditionalAuthenticationProvider</span><span class="w"> </span><span class="nx">AzureMfaAuthentication</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Alternative: Third-Party MFA (e.g., Duo)</strong>:
+    <ul>
+      <li>Install the Duo Authentication Proxy on a separate server.</li>
+      <li>Configure AD FS to use Duo as an additional authentication provider:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-AdfsAdditionalAuthenticationProvider</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"DuoAuthentication"</span><span class="w"> </span><span class="nt">-ConfigurationData</span><span class="w"> </span><span class="p">@{</span><span class="w"> </span><span class="nx">DuoApiHostname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"api-xxxx.duosecurity.com"</span><span class="p">;</span><span class="w"> </span><span class="nx">IntegrationKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"your-ikey"</span><span class="p">;</span><span class="w"> </span><span class="nx">SecretKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"your-skey"</span><span class="p">;</span><span class="w"> </span><span class="nx">ApiToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"your-api-token"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Test MFA</strong>:
+    <ul>
+      <li>Access <code class="language-plaintext highlighter-rouge">https://fs.contoso.com/adfs/ls</code> from an external client.</li>
+      <li>Verify that users are prompted for MFA (e.g., Azure MFA push notification or Duo app).</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-7-set-up-disaster-recovery">Step 7: Set Up Disaster Recovery</h4>
+<ol>
+  <li><strong>Configure SQL Server Always On Availability Groups</strong>:
+    <ul>
+      <li>On the primary SQL Server (SQLSRV1), create an Availability Group for the ADFSConfiguration database.</li>
+      <li>Add the secondary SQL Server (SQLSRV2) as a replica:
+        <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="n">AVAILABILITY</span> <span class="k">GROUP</span> <span class="n">ADFSAG</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">AUTOMATED_BACKUP_PREFERENCE</span> <span class="o">=</span> <span class="k">PRIMARY</span><span class="p">)</span>
+<span class="k">FOR</span> <span class="k">DATABASE</span> <span class="n">ADFSConfiguration</span>
+<span class="n">REPLICA</span> <span class="k">ON</span> <span class="s1">'SQLSRV1'</span> <span class="k">WITH</span> <span class="p">(</span><span class="n">ENDPOINT_URL</span> <span class="o">=</span> <span class="s1">'TCP://SQLSRV1.contoso.com:5022'</span><span class="p">,</span> <span class="n">AVAILABILITY_MODE</span> <span class="o">=</span> <span class="n">SYNCHRONOUS_COMMIT</span><span class="p">)</span>
+<span class="n">REPLICA</span> <span class="k">ON</span> <span class="s1">'SQLSRV2'</span> <span class="k">WITH</span> <span class="p">(</span><span class="n">ENDPOINT_URL</span> <span class="o">=</span> <span class="s1">'TCP://SQLSRV2.contoso.com:5022'</span><span class="p">,</span> <span class="n">AVAILABILITY_MODE</span> <span class="o">=</span> <span class="n">SYNCHRONOUS_COMMIT</span><span class="p">);</span>
+</code></pre></div>        </div>
+      </li>
+      <li>Join the secondary SQL Server to the Availability Group.</li>
+    </ul>
+  </li>
+  <li><strong>Configure AD FS for Failover</strong>:
+    <ul>
+      <li>Update the AD FS farm to use the Availability Group listener:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-AdfsProperties</span><span class="w"> </span><span class="nt">-SQLConnectionString</span><span class="w"> </span><span class="s2">"Data Source=ADFSAG-Listener;Initial Catalog=ADFSConfiguration;Integrated Security=True"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Test Failover</strong>:
+    <ul>
+      <li>Simulate a failure on the primary site (e.g., stop SQLSRV1).</li>
+      <li>Verify that AD FS continues to function using the secondary site’s SQL Server and AD FS servers.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-8-secure-the-infrastructure">Step 8: Secure the Infrastructure</h4>
+<ol>
+  <li><strong>Certificate Management</strong>:
+    <ul>
+      <li>Ensure all AD FS and WAP servers use the same SSL certificate for <code class="language-plaintext highlighter-rouge">fs.contoso.com</code>.</li>
+      <li>Configure certificate auto-renewal using a script or certificate management tool.</li>
+    </ul>
+  </li>
+  <li><strong>Enable TLS 1.3</strong>:
+    <ul>
+      <li>Update registry settings to enable TLS 1.3 on all servers:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-ItemProperty</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"HKLM:\SYSTEM\CurrentControlSet\Services\HTTP\Parameters\SslBinding"</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"EnabledProtocols"</span><span class="w"> </span><span class="nt">-Value</span><span class="w"> </span><span class="nx">0x00000800</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Configure Conditional Access</strong>:
+    <ul>
+      <li>Use Azure AD Conditional Access policies to restrict access based on location, device compliance, or user risk level.</li>
+      <li>Example policy: Require MFA for external access only.</li>
+    </ul>
+  </li>
+  <li><strong>Harden Servers</strong>:
+    <ul>
+      <li>Apply CIS benchmarks using Group Policy:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Import-GPO</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"C:\CIS\GPO\WinServer2022_CIS.gpo"</span><span class="w"> </span><span class="nt">-TargetName</span><span class="w"> </span><span class="s2">"ADFS_Servers"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Restrict RDP access and enforce strong passwords.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-9-monitor-and-test-the-deployment">Step 9: Monitor and Test the Deployment</h4>
+<ol>
+  <li><strong>Monitor AD FS</strong>:
+    <ul>
+      <li>Use Event Viewer to monitor AD FS logs (Event ID 100 for successful logins, 403 for MFA failures).</li>
+      <li>Configure Azure Monitor or Azure Sentinel to collect and analyze logs:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-Module</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="nx">Az.Monitor</span><span class="w">
+</span><span class="n">Connect-AzAccount</span><span class="w">
+</span><span class="nx">New-AzDiagnosticSetting</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"ADFSDiagnostic"</span><span class="w"> </span><span class="nt">-ResourceId</span><span class="w"> </span><span class="s2">"/subscriptions/your-sub-id/resourceGroups/your-rg/providers/Microsoft.Adfs/adfs/farm"</span><span class="w"> </span><span class="nt">-LogAnalyticsWorkspaceId</span><span class="w"> </span><span class="s2">"your-workspace-id"</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Test the Deployment</strong>:
+    <ul>
+      <li>Test internal access: <code class="language-plaintext highlighter-rouge">https://fs.contoso.com/adfs/ls</code>.</li>
+      <li>Test external access via WAP: <code class="language-plaintext highlighter-rouge">https://fs.contoso.com/adfs/ls</code> from an external client.</li>
+      <li>Simulate failover by stopping primary AD FS servers and verifying access via secondary site.</li>
+      <li>Validate MFA functionality with test accounts.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h4 id="step-10-document-and-automate">Step 10: Document and Automate</h4>
+<ol>
+  <li><strong>Document the Setup</strong>:
+    <ul>
+      <li>Create runbooks detailing server roles, DNS settings, load balancer configurations, and SQL Server setup.</li>
+      <li>Include recovery procedures for failover and certificate renewal.</li>
+    </ul>
+  </li>
+  <li><strong>Automate Maintenance</strong>:
+    <ul>
+      <li>Create a PowerShell script to check AD FS health:
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$health</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Test-AdfsFarmHealth</span><span class="w">
+</span><span class="nx">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$health</span><span class="o">.</span><span class="nf">Status</span><span class="w"> </span><span class="o">-ne</span><span class="w"> </span><span class="s2">"Healthy"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Send-MailMessage</span><span class="w"> </span><span class="nt">-To</span><span class="w"> </span><span class="s2">"admin@contoso.com"</span><span class="w"> </span><span class="nt">-From</span><span class="w"> </span><span class="s2">"alerts@contoso.com"</span><span class="w"> </span><span class="nt">-Subject</span><span class="w"> </span><span class="s2">"AD FS Health Alert"</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$health</span><span class="o">.</span><span class="nf">Details</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>Schedule the script using Task Scheduler.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h3 id="key-considerations">Key Considerations</h3>
+<ul>
+  <li><strong>Scalability</strong>: Add more AD FS or WAP servers as needed to handle increased load.</li>
+  <li><strong>Security</strong>: Regularly update servers with the latest patches and monitor for vulnerabilities using tools like Microsoft Defender for Cloud.</li>
+  <li><strong>Backup</strong>: Back up the SQL Server database and AD FS certificates regularly.</li>
+  <li><strong>Compliance</strong>: Ensure configurations align with standards like NIST 800-53 or GDPR, if applicable.</li>
+</ul>
+
+<hr />
+
+<h3 id="testing-and-validation">Testing and Validation</h3>
+<ul>
+  <li>Verify SSO with a test application (e.g., Office 365 or a custom SAML app).</li>
+  <li>Check load balancer failover by stopping one AD FS or WAP server.</li>
+  <li>Simulate a disaster recovery scenario by failing over to the secondary site.</li>
+  <li>Audit logs to ensure MFA and conditional access policies are enforced.</li>
+</ul>
