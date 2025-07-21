@@ -66,7 +66,13 @@ I’m Gerardo, a security engineer who builds tools to automate forensic analysi
 - LinkedIn: [linkedin.com/in/gerardo-monterroza-8208aa192](https://www.linkedin.com/in/gerardo-monterroza-8208aa192)  
 - GitHub: [github.com/monterrozagera](https://github.com/monterrozagera)
 
-## Notes
+## My Notes
+
+[Learning Powershell - Notes 1](./notes/learning-powershell-1.markdown)
+
+[Learning Powershell - Notes 2](./notes/learning-powershell-2.markdown)
+
+[Learning Powershell - Notes 3](./notes/learning-powershell-3.markdown)
 
 [Learning Docker - Notes](./Learning-Docker/Learning%20Docker.html)
 
