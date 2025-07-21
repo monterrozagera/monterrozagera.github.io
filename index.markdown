@@ -30,7 +30,7 @@ Python tools to analyze and audit AWS cloud infrastructure security.
 
 [High-Availability Active Directory Federation Services (AD FS) Infrastructure (Windows, Ansible, Terraform, AWS)](./ad-fs.markdown)
 
-[Windows Server Admin: High CPU Usage Due to a Runaway Process on Multiple Windows Servers](./win-admin-1.markdown)
+[Windows Server Admin: High CPU Usage Due to a Runaway Process on Multiple Windows Servers (with Powershell and Cloudwatch logs)](./win-admin-1.markdown)
 
 [Cloud Security Incident 1: Misconfigured S3 Bucket Exposes Sensitive Data](./cloud-scenario-1.markdown)
 
