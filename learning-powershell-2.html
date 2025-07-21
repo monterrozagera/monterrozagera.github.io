@@ -1,0 +1,188 @@
+<h1 id="learning-powershell--part-2-advanced-concepts">Learning PowerShell – Part 2: Advanced Concepts</h1>
+
+<h2 id="functions-and-parameters">Functions and Parameters</h2>
+
+<p>Define reusable blocks of code using <code class="language-plaintext highlighter-rouge">function</code>.</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">Get-Greeting</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="kr">param</span><span class="w"> </span><span class="p">(</span><span class="w">
+        </span><span class="p">[</span><span class="n">string</span><span class="p">]</span><span class="nv">$Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Guest"</span><span class="w">
+    </span><span class="p">)</span><span class="w">
+    </span><span class="kr">return</span><span class="w"> </span><span class="s2">"Hello, </span><span class="nv">$Name</span><span class="s2">!"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">Get-Greeting</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"Kami"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="error-handling-with-trycatchfinally">Error Handling with Try/Catch/Finally</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Get-Content</span><span class="w"> </span><span class="s2">"missingfile.txt"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="kr">catch</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Write-Warning</span><span class="w"> </span><span class="s2">"The file does not exist: </span><span class="bp">$_</span><span class="s2">"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="kr">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Write-Output</span><span class="w"> </span><span class="s2">"Operation finished."</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>You can also use <code class="language-plaintext highlighter-rouge">-ErrorAction Stop</code> to force a terminating error:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-Item</span><span class="w"> </span><span class="s2">"C:\badpath"</span><span class="w"> </span><span class="nt">-ErrorAction</span><span class="w"> </span><span class="nx">Stop</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="creating-your-own-module">Creating Your Own Module</h2>
+
+<p>Create a reusable module by saving functions in a <code class="language-plaintext highlighter-rouge">.psm1</code> file.</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># MyTools.psm1</span><span class="w">
+</span><span class="kr">function</span><span class="w"> </span><span class="nf">Say-Hello</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="kr">param</span><span class="p">(</span><span class="nv">$Name</span><span class="p">)</span><span class="w">
+    </span><span class="s2">"Hello from the module, </span><span class="nv">$Name</span><span class="s2">!"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Load it with:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Import-Module</span><span class="w"> </span><span class="o">.</span><span class="nx">\MyTools.psm1</span><span class="w">
+</span><span class="n">Say-Hello</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"Kami"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="powershell-remoting">PowerShell Remoting</h2>
+
+<p>PowerShell can run scripts on remote systems using <code class="language-plaintext highlighter-rouge">WinRM</code> or <code class="language-plaintext highlighter-rouge">SSH</code>.</p>
+
+<h3 id="enable-on-local-machine">Enable on local machine:</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Enable-PSRemoting</span><span class="w"> </span><span class="nt">-Force</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="connect-to-a-remote-machine">Connect to a remote machine:</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Enter-PSSession</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="nx">SERVER01</span><span class="w"> </span><span class="nt">-Credential</span><span class="w"> </span><span class="p">(</span><span class="n">Get-Credential</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="run-a-command-remotely">Run a command remotely:</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="nx">SERVER01</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Get-Service</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Where-Object</span><span class="w"> </span><span class="p">{</span><span class="bp">$_</span><span class="o">.</span><span class="nf">Status</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"Running"</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="working-with-files-and-json">Working with Files and JSON</h2>
+
+<h3 id="read-and-convert-json">Read and convert JSON:</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-Content</span><span class="w"> </span><span class="s2">"config.json"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ConvertFrom-Json</span><span class="w">
+</span><span class="nv">$data</span><span class="o">.</span><span class="nf">ServerName</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="write-json">Write JSON:</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="w">
+    </span><span class="nx">ServerName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"App01"</span><span class="w">
+    </span><span class="nx">Port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">443</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="nv">$data</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ConvertTo-Json</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Set-Content</span><span class="w"> </span><span class="s2">"config.json"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="securing-credentials">Securing Credentials</h2>
+
+<p>Avoid storing plain text passwords.</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Save credentials securely</span><span class="w">
+</span><span class="n">Get-Credential</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Export-Clixml</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"creds.xml"</span><span class="w">
+
+</span><span class="c"># Load them securely</span><span class="w">
+</span><span class="nv">$cred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Import-Clixml</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"creds.xml"</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Use <code class="language-plaintext highlighter-rouge">$cred</code> with <code class="language-plaintext highlighter-rouge">Invoke-Command</code>, <code class="language-plaintext highlighter-rouge">New-PSSession</code>, etc.</p>
+
+<hr />
+
+<h2 id="custom-prompt-powershell-profile">Custom Prompt (PowerShell Profile)</h2>
+
+<p>Customize your terminal by editing your profile script:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">notepad</span><span class="w"> </span><span class="bp">$PROFILE</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Example prompt:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">prompt</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"[</span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">USERNAME</span><span class="s2">@</span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">COMPUTERNAME</span><span class="s2">] PS </span><span class="bp">$PWD</span><span class="s2">&gt; "</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="unit-testing-with-pester">Unit Testing with Pester</h2>
+
+<p>Install the module:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-Module</span><span class="w"> </span><span class="nx">Pester</span><span class="w"> </span><span class="nt">-Force</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Create a test file:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># MyTools.Tests.ps1</span><span class="w">
+</span><span class="n">Describe</span><span class="w"> </span><span class="s2">"Say-Hello"</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">It</span><span class="w"> </span><span class="s2">"Returns correct greeting"</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="n">Say-Hello</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"Kami"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Should</span><span class="w"> </span><span class="nt">-Be</span><span class="w"> </span><span class="s2">"Hello from the module, Kami!"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Run tests:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Invoke-Pester</span><span class="w"> </span><span class="o">.</span><span class="nx">\MyTools.Tests.ps1</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="scheduled-jobs">Scheduled Jobs</h2>
+
+<p>Unlike Task Scheduler, PowerShell can manage its own jobs:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$trigger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">New-JobTrigger</span><span class="w"> </span><span class="nt">-Daily</span><span class="w"> </span><span class="nt">-At</span><span class="w"> </span><span class="s2">"7am"</span><span class="w">
+</span><span class="n">Register-ScheduledJob</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"BackupJob"</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Copy-Item</span><span class="w"> </span><span class="s2">"C:\Important"</span><span class="w"> </span><span class="nt">-Destination</span><span class="w"> </span><span class="s2">"D:\Backup"</span><span class="w"> </span><span class="nt">-Recurse</span><span class="w">
+</span><span class="p">}</span><span class="w"> </span><span class="nt">-Trigger</span><span class="w"> </span><span class="nv">$trigger</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="real-world-use-case-audit-local-admins">Real-World Use Case: Audit Local Admins</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-LocalGroupMember</span><span class="w"> </span><span class="nt">-Group</span><span class="w"> </span><span class="s2">"Administrators"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">ObjectClass</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Or for remote machines:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="nx">PC01</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Get-LocalGroupMember</span><span class="w"> </span><span class="nt">-Group</span><span class="w"> </span><span class="s2">"Administrators"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="real-world-use-case-check-disk-space-remotely">Real-World Use Case: Check Disk Space Remotely</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="s2">"Server01"</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Get-PSDrive</span><span class="w"> </span><span class="nt">-PSProvider</span><span class="w"> </span><span class="nx">FileSystem</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Where-Object</span><span class="w"> </span><span class="p">{</span><span class="bp">$_</span><span class="o">.</span><span class="nf">Used</span><span class="w"> </span><span class="o">-gt</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Check part 3 of my Powershell notes <a href="./learning-powershell-3.markdown">here</a>.</p>

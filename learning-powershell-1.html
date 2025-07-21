@@ -1,0 +1,173 @@
+<h1 id="learning-powershell--part-1">Learning PowerShell – Part 1:</h1>
+
+<p>PowerShell is a task-based command-line shell and scripting language built on .NET. It is widely used for automation of system administration tasks across Windows, Linux, and macOS.</p>
+
+<p>This article walks you through PowerShell basics, common commands, and some advanced scripting examples.</p>
+
+<hr />
+
+<h2 id="what-is-powershell">What is PowerShell?</h2>
+
+<p>PowerShell combines the power of the command line with the flexibility of scripting. It uses <strong>cmdlets</strong> (command-lets), which are specialized .NET classes implementing a specific operation.</p>
+
+<p>Example of a cmdlet:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-Process</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This lists all currently running processes.</p>
+
+<hr />
+
+<h2 id="basic-commands">Basic Commands</h2>
+
+<h3 id="list-files">List Files</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-ChildItem</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Shorthand:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ls</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Output:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       2025-07-20     10:14                Documents
+-a----       2025-07-18     14:00           2048 notes.txt
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="change-directory">Change Directory</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-Location</span><span class="w"> </span><span class="s2">"C:\Users\Kami\Documents"</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Shorthand:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cd</span><span class="w"> </span><span class="s2">"C:\Users\Kami\Documents"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="create-a-file">Create a File</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">New-Item</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"example.txt"</span><span class="w"> </span><span class="nt">-ItemType</span><span class="w"> </span><span class="s2">"File"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="read-file-contents">Read File Contents</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-Content</span><span class="w"> </span><span class="nx">example.txt</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="write-to-a-file">Write to a File</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s2">"Hello World from PowerShell!"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Out-File</span><span class="w"> </span><span class="nx">example.txt</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h3 id="append-to-a-file">Append to a File</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s2">"Adding more text..."</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Add-Content</span><span class="w"> </span><span class="nx">example.txt</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="variables-and-objects">Variables and Objects</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Kami"</span><span class="w">
+</span><span class="n">Write-Output</span><span class="w"> </span><span class="s2">"Hello, </span><span class="nv">$name</span><span class="s2">!"</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Everything in PowerShell is an object. You can access properties like this:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-Date</span><span class="w">
+</span><span class="nv">$date</span><span class="o">.</span><span class="nf">DayOfWeek</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="loops-and-conditionals">Loops and Conditionals</h2>
+
+<h3 id="if-else">If-Else</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w">
+</span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$number</span><span class="w"> </span><span class="o">-gt</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"Greater than 5"</span><span class="w">
+</span><span class="p">}</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"5 or less"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="foreach-loop">ForEach Loop</h3>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="o">..</span><span class="mi">5</span><span class="w">
+</span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$i</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">$items</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Write-Output</span><span class="w"> </span><span class="s2">"Number: </span><span class="nv">$i</span><span class="s2">"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="installing-modules">Installing Modules</h2>
+
+<p>You can install modules from the PowerShell Gallery:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-Module</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="nx">Az</span><span class="w"> </span><span class="nt">-Scope</span><span class="w"> </span><span class="nx">CurrentUser</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="getting-help">Getting Help</h2>
+
+<p>PowerShell has built-in help:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-Help</span><span class="w"> </span><span class="nx">Get-Process</span><span class="w">
+</span></code></pre></div></div>
+
+<p>To update help files:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Update-Help</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="automating-tasks">Automating Tasks</h2>
+
+<h3 id="scheduled-task-example">Scheduled Task Example</h3>
+
+<p>Create a task that runs a script every day at 9 AM:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">New-ScheduledTaskAction</span><span class="w"> </span><span class="nt">-Execute</span><span class="w"> </span><span class="s2">"PowerShell.exe"</span><span class="w"> </span><span class="nt">-Argument</span><span class="w"> </span><span class="s2">"-File C:\Scripts\backup.ps1"</span><span class="w">
+</span><span class="nv">$trigger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">New-ScheduledTaskTrigger</span><span class="w"> </span><span class="nt">-Daily</span><span class="w"> </span><span class="nt">-At</span><span class="w"> </span><span class="nx">9am</span><span class="w">
+</span><span class="n">Register-ScheduledTask</span><span class="w"> </span><span class="nt">-Action</span><span class="w"> </span><span class="nv">$action</span><span class="w"> </span><span class="nt">-Trigger</span><span class="w"> </span><span class="nv">$trigger</span><span class="w"> </span><span class="nt">-TaskName</span><span class="w"> </span><span class="s2">"DailyBackup"</span><span class="w"> </span><span class="nt">-Description</span><span class="w"> </span><span class="s2">"Runs backup script"</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="example-script">Example Script</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># backup.ps1</span><span class="w">
+</span><span class="nv">$source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"C:\Users\Kami\Documents"</span><span class="w">
+</span><span class="nv">$destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"D:\Backups\Documents"</span><span class="w">
+</span><span class="n">Copy-Item</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="nv">$source</span><span class="w"> </span><span class="nt">-Destination</span><span class="w"> </span><span class="nv">$destination</span><span class="w"> </span><span class="nt">-Recurse</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="test-your-script">Test Your Script</h2>
+
+<p>Use <code class="language-plaintext highlighter-rouge">-WhatIf</code> to preview commands without making changes:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Remove-Item</span><span class="w"> </span><span class="nx">C:\Temp\</span><span class="o">*</span><span class="w"> </span><span class="nt">-WhatIf</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Check part 2 of my Powershell notes <a href="./learning-powershell-2.markdown">here</a>.</p>

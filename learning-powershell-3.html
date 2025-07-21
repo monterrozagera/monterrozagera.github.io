@@ -1,0 +1,156 @@
+<h1 id="learning-powershell--part-3-real-world-scenarios">Learning PowerShell – Part 3: Real-World Scenarios</h1>
+
+<p>These are some of the use cases for Powershell.</p>
+
+<h2 id="scenario-1-audit-installed-software">Scenario 1: Audit Installed Software</h2>
+
+<p>Useful for inventory, compliance, or incident response.</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-ItemProperty</span><span class="w"> </span><span class="nx">HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\</span><span class="o">*</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">DisplayName</span><span class="p">,</span><span class="w"> </span><span class="nx">DisplayVersion</span><span class="p">,</span><span class="w"> </span><span class="nx">Publisher</span><span class="p">,</span><span class="w"> </span><span class="nx">InstallDate</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Sort-Object</span><span class="w"> </span><span class="nx">DisplayName</span><span class="w">
+</span></code></pre></div></div>
+
+<p>For remote audit:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="s2">"Workstation01"</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Get-ItemProperty</span><span class="w"> </span><span class="nx">HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\</span><span class="o">*</span><span class="w"> </span><span class="o">|</span><span class="w">
+    </span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">DisplayName</span><span class="p">,</span><span class="w"> </span><span class="nx">DisplayVersion</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="scenario-2-find-large-files-on-a-drive">Scenario 2: Find Large Files on a Drive</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-ChildItem</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="nx">C:\</span><span class="w"> </span><span class="nt">-Recurse</span><span class="w"> </span><span class="nt">-File</span><span class="w"> </span><span class="nt">-ErrorAction</span><span class="w"> </span><span class="nx">SilentlyContinue</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Where-Object</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">$_</span><span class="o">.</span><span class="nf">Length</span><span class="w"> </span><span class="o">-gt</span><span class="w"> </span><span class="mi">500</span><span class="n">MB</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Sort-Object</span><span class="w"> </span><span class="nx">Length</span><span class="w"> </span><span class="nt">-Descending</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">FullName</span><span class="p">,</span><span class="w"> </span><span class="p">@{</span><span class="nx">Name</span><span class="o">=</span><span class="s2">"SizeMB"</span><span class="p">;</span><span class="w"> </span><span class="nx">Expression</span><span class="o">=</span><span class="p">{</span><span class="s2">"{0:N2}"</span><span class="w"> </span><span class="nt">-f</span><span class="w"> </span><span class="p">(</span><span class="bp">$_</span><span class="o">.</span><span class="nf">Length</span><span class="w"> </span><span class="n">/</span><span class="w"> </span><span class="nx">1MB</span><span class="p">)}}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This is great for cleaning up disk space.</p>
+
+<hr />
+
+<h2 id="scenario-3-restart-a-service-on-multiple-machines">Scenario 3: Restart a Service on Multiple Machines</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$computers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@(</span><span class="s2">"Server01"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Server02"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Server03"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="nv">$computers</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Restart-Service</span><span class="w"> </span><span class="nt">-Name</span><span class="w"> </span><span class="s2">"Spooler"</span><span class="w"> </span><span class="nt">-Force</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Useful for applying patches or resetting services.</p>
+
+<hr />
+
+<h2 id="scenario-4-get-last-logon-for-domain-users-ad">Scenario 4: Get Last Logon for Domain Users (AD)</h2>
+
+<p>Requires <code class="language-plaintext highlighter-rouge">RSAT</code> and <code class="language-plaintext highlighter-rouge">ActiveDirectory</code> module.</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-ADUser</span><span class="w"> </span><span class="nt">-Filter</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nt">-Property</span><span class="w"> </span><span class="nx">LastLogonDate</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">SamAccountName</span><span class="p">,</span><span class="w"> </span><span class="nx">LastLogonDate</span><span class="w"> </span><span class="o">|</span><span class="w">
+</span><span class="n">Sort-Object</span><span class="w"> </span><span class="nx">LastLogonDate</span><span class="w"> </span><span class="nt">-Descending</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="scenario-5-export-local-admin-members-to-csv">Scenario 5: Export Local Admin Members to CSV</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$computers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@(</span><span class="s2">"PC01"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PC02"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PC03"</span><span class="p">)</span><span class="w">
+
+</span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$computer</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">$computers</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Invoke-Command</span><span class="w"> </span><span class="nt">-ComputerName</span><span class="w"> </span><span class="nv">$computer</span><span class="w"> </span><span class="nt">-ScriptBlock</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="n">Get-LocalGroupMember</span><span class="w"> </span><span class="nt">-Group</span><span class="w"> </span><span class="s2">"Administrators"</span><span class="w">
+    </span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Select-Object</span><span class="w"> </span><span class="p">@{</span><span class="nx">Name</span><span class="o">=</span><span class="s2">"ComputerName"</span><span class="p">;</span><span class="w"> </span><span class="nx">Expression</span><span class="o">=</span><span class="p">{</span><span class="nv">$computer</span><span class="p">}},</span><span class="w"> </span><span class="nx">Name</span><span class="w"> </span><span class="o">|</span><span class="w">
+    </span><span class="n">Export-Csv</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"admins_</span><span class="nv">$computer</span><span class="s2">.csv"</span><span class="w"> </span><span class="nt">-Append</span><span class="w"> </span><span class="nt">-NoTypeInformation</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This helps during audits or privilege reviews.</p>
+
+<hr />
+
+<h2 id="scenario-6-verify-antivirus-status">Scenario 6: Verify Antivirus Status</h2>
+
+<p>For Defender:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-MpComputerStatus</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Select-Object</span><span class="w"> </span><span class="nx">AMServiceEnabled</span><span class="p">,</span><span class="w"> </span><span class="nx">AntivirusEnabled</span><span class="p">,</span><span class="w"> </span><span class="nx">RealTimeProtectionEnabled</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Use this in compliance checks or incident triage.</p>
+
+<hr />
+
+<h2 id="scenario-7-send-alert-email-on-disk-threshold">Scenario 7: Send Alert Email on Disk Threshold</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">15</span><span class="w">
+</span><span class="nv">$drives</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-PSDrive</span><span class="w"> </span><span class="nt">-PSProvider</span><span class="w"> </span><span class="nx">FileSystem</span><span class="w">
+
+</span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$drive</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">$drives</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nv">$freePercent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nv">$drive</span><span class="o">.</span><span class="nf">Free</span><span class="w"> </span><span class="n">/</span><span class="w"> </span><span class="nv">$drive</span><span class="o">.</span><span class="nf">Used</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">100</span><span class="w">
+    </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$freePercent</span><span class="w"> </span><span class="o">-lt</span><span class="w"> </span><span class="nv">$threshold</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="n">Send-MailMessage</span><span class="w"> </span><span class="nt">-To</span><span class="w"> </span><span class="s2">"admin@domain.com"</span><span class="w"> </span><span class="nt">-From</span><span class="w"> </span><span class="s2">"monitor@domain.com"</span><span class="w"> </span><span class="se">`
+</span><span class="w">            </span><span class="nt">-Subject</span><span class="w"> </span><span class="s2">"Low Disk Space Alert on </span><span class="si">$(</span><span class="nv">$drive</span><span class="o">.</span><span class="nf">Name</span><span class="si">)</span><span class="s2">: </span><span class="si">$(</span><span class="p">[</span><span class="n">math</span><span class="p">]::</span><span class="n">Round</span><span class="p">(</span><span class="nv">$freePercent</span><span class="si">)</span><span class="s2">)% free"</span><span class="w"> </span><span class="se">`
+</span><span class="w">            </span><span class="nt">-SmtpServer</span><span class="w"> </span><span class="s2">"smtp.domain.com"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<hr />
+
+<h2 id="scenario-8-backup-configuration-files">Scenario 8: Backup Configuration Files</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$sourcePaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@(</span><span class="w">
+    </span><span class="s2">"C:\ProgramData\App\Config.xml"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"C:\inetpub\wwwroot\web.config"</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$path</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">$sourcePaths</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Copy-Item</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="nv">$path</span><span class="w"> </span><span class="nt">-Destination</span><span class="w"> </span><span class="s2">"D:\Backups\"</span><span class="w"> </span><span class="nt">-Force</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Combine with <code class="language-plaintext highlighter-rouge">Task Scheduler</code> or <code class="language-plaintext highlighter-rouge">Register-ScheduledJob</code> for automation.</p>
+
+<hr />
+
+<h2 id="scenario-9-monitor-a-websites-health">Scenario 9: Monitor a Website’s Health</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="s2">"https://yourwebsite.com"</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w">
+
+</span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$response</span><span class="o">.</span><span class="nf">StatusCode</span><span class="w"> </span><span class="o">-ne</span><span class="w"> </span><span class="mi">200</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Write-Warning</span><span class="w"> </span><span class="s2">"Website is down! Status code: </span><span class="si">$(</span><span class="nv">$response</span><span class="o">.</span><span class="nf">StatusCode</span><span class="si">)</span><span class="s2">"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Enhance with logging and email for production use.</p>
+
+<hr />
+
+<h2 id="scenario-10-reset-password-for-multiple-users">Scenario 10: Reset Password for Multiple Users</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Import-Module</span><span class="w"> </span><span class="nx">ActiveDirectory</span><span class="w">
+
+</span><span class="nv">$users</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-Content</span><span class="w"> </span><span class="o">.</span><span class="nx">\userlist.txt</span><span class="w">
+</span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$user</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">$users</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">Set-ADAccountPassword</span><span class="w"> </span><span class="nt">-Identity</span><span class="w"> </span><span class="nv">$user</span><span class="w"> </span><span class="nt">-Reset</span><span class="w"> </span><span class="nt">-NewPassword</span><span class="w"> </span><span class="p">(</span><span class="n">ConvertTo-SecureString</span><span class="w"> </span><span class="s2">"N3wP@ss!"</span><span class="w"> </span><span class="nt">-AsPlainText</span><span class="w"> </span><span class="nt">-Force</span><span class="p">)</span><span class="w">
+    </span><span class="n">Enable-ADAccount</span><span class="w"> </span><span class="nt">-Identity</span><span class="w"> </span><span class="nv">$user</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>You can combine this with CSV input and reporting.</p>
+
+<hr />
+
+<h2 id="bonus-create-a-self-updating-log-script">Bonus: Create a Self-Updating Log Script</h2>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Get-Date</span><span class="w"> </span><span class="nt">-Format</span><span class="w"> </span><span class="s2">"yyyy-MM-dd_HH-mm"</span><span class="w">
+</span><span class="nv">$logPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"C:\Logs\HealthCheck_</span><span class="nv">$date</span><span class="s2">.log"</span><span class="w">
+
+</span><span class="n">Get-Service</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Where-Object</span><span class="w"> </span><span class="p">{</span><span class="bp">$_</span><span class="o">.</span><span class="nf">Status</span><span class="w"> </span><span class="o">-ne</span><span class="w"> </span><span class="s2">"Running"</span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Out-File</span><span class="w"> </span><span class="nv">$logPath</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Run on a schedule and email/report log files automatically.</p>
