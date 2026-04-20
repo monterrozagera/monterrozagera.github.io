@@ -1,22 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-<!--
-  This is a layout file for the home page.
--->
 <head>
   <meta charset="UTF-8">
-  <title>Gerardo Monterroza | SRE & DevSecOps Consultant</title>
+  <title>Gerardo Monterroza | Senior SRE & DevSecOps Consultant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      background: transparent;
+      min-height: 100%;
+      background: #000;
       color: white;
-      font-family: sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     #vanta-bg {
@@ -24,26 +20,26 @@
       top: 0;
       left: 0;
       width: 100%;
+      height: 100%;
       z-index: -1;
-      pointer-events: none;
     }
-
 
     .content-wrapper {
       position: relative;
       z-index: 1;
-      min-height: 100vh;
-      padding: 2rem;
+      padding: 4rem 1rem;
       display: flex;
       justify-content: center;
-      align-items: center;
     }
 
     .glass-box {
-      background: rgba(0, 0, 0, 0.90);
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
       max-width: 900px;
       width: 100%;
     }
@@ -51,16 +47,48 @@
     a {
       color: #0ef;
       text-decoration: none;
+      transition: 0.3s;
     }
 
     a:hover {
-      text-decoration: underline;
+      color: #fff;
+      text-shadow: 0 0 8px #0ef;
     }
 
-    h1,
-    h2,
-    h3 {
+    h1, h2, h3 {
       color: #0ef;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-top: 2.5rem;
+      border-bottom: 1px solid rgba(14, 255, 255, 0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .badge-container img {
+      margin-right: 5px;
+      margin-bottom: 10px;
+    }
+
+    hr {
+      border-color: rgba(255, 255, 255, 0.1);
+      margin: 2rem 0;
+    }
+
+    .contact-list, .writeup-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .contact-list li, .writeup-list li {
+      margin-bottom: 0.75rem;
     }
   </style>
 </head>
@@ -71,88 +99,79 @@
   <div class="content-wrapper">
     <div class="glass-box">
       <h1 id="gerardo-a-monterroza">Gerardo A. Monterroza</h1>
-<p><strong>Senior Site Reliability Engineer • DevSecOps • Infrastructure Strategy</strong></p>
+      <p class="lead"><strong>Senior Site Reliability Engineer • DevSecOps • Infrastructure Strategy</strong></p>
 
-<p><a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3670A0?style=flat&amp;logo=python&amp;logoColor=white" alt="Python" /></a>
-<a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-orange?style=flat&amp;logo=rust" alt="Rust" /></a>
-<a href="https://kubernetes.io/"><img src="https://img.shields.io/badge/Kubernetes-326CE5?style=flat&amp;logo=kubernetes&amp;logoColor=white" alt="Kubernetes" /></a>
-<a href="https://www.terraform.io/"><img src="https://img.shields.io/badge/Terraform-7B42BC?style=flat&amp;logo=terraform&amp;logoColor=white" alt="Terraform" /></a></p>
+      <div class="badge-container">
+        <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3670A0?style=flat&logo=python&logoColor=white" alt="Python"></a>
+        <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-orange?style=flat&logo=rust" alt="Rust"></a>
+        <a href="https://kubernetes.io/"><img src="https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white" alt="Kubernetes"></a>
+        <a href="https://www.terraform.io/"><img src="https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white" alt="Terraform"></a>
+        <a href="https://www.ansible.com/"><img src="https://img.shields.io/badge/Ansible-EE0000?style=flat&logo=ansible&logoColor=white" alt="Ansible"></a>
+      </div>
 
-<hr />
+      <h2 id="️-expertise--consulting">🛠️ Expertise & Consulting</h2>
+      <p>I specialize in architecting <strong>resilient, security-first cloud infrastructure</strong>. With a background in malware research and a degree in Cybersecurity (WGU), I bridge the gap between high-velocity deployments and ironclad system stability.</p>
 
-<h2 id="️-expertise--consulting">🛠️ Expertise &amp; Consulting</h2>
-<p>I specialize in architecting <strong>resilient, security-first cloud infrastructure</strong>. With a background in malware research and a degree in Cybersecurity (WGU), I help organizations bridge the gap between high-velocity deployments and ironclad system stability.</p>
+      <ul>
+        <li><strong>SRE & Observability:</strong> Implementing SLO-based monitoring, error budgets, and automated incident response pipelines.</li>
+        <li><strong>DevSecOps:</strong> Automating HIPAA/SOC2 compliance, secret management, and CI/CD security gating.</li>
+        <li><strong>Infrastructure as Code:</strong> Engineering scalable, zero-drift environments using Terraform, Ansible, and Packer.</li>
+      </ul>
 
-<ul>
-  <li><strong>SRE &amp; Observability:</strong> Implementing SLO-based monitoring and automated incident response.</li>
-  <li><strong>DevSecOps:</strong> Automating HIPAA/SOC2 compliance and CI/CD security gating.</li>
-  <li><strong>Infrastructure as Code:</strong> Building scalable, zero-drift environments with Terraform and Ansible.</li>
-</ul>
+      <h2 id="-technical-write-ups--case-studies">📝 Technical Write-ups & Case Studies</h2>
 
-<hr />
+      <h3 id="site-reliability--infrastructure-automation"><strong>Site Reliability & Infrastructure Automation</strong></h3>
+      <ul class="writeup-list">
+        <li><a href="./ad-fs.markdown"><strong>High-Availability AD FS Infrastructure:</strong></a> Multi-region deployment using Windows, Ansible, Terraform, and AWS.</li>
+        <li><a href="./win-admin-1.markdown"><strong>Incident Response - Windows Admin:</strong></a> Deep-dive troubleshooting of runaway processes using PowerShell and CloudWatch.</li>
+        <li><a href="./automating-aws-ami.markdown"><strong>Automating Infrastructure 1:</strong></a> Scalable AWS AMI baking with Ansible.</li>
+        <li><a href="./automating-aws2.markdown"><strong>Automating Infrastructure 2:</strong></a> Full-stack automation with Ansible, Packer, and Terraform on AWS.</li>
+      </ul>
 
-<h2 id="-technical-write-ups--case-studies">📝 Technical Write-ups &amp; Case Studies</h2>
+      <h3 id="cloud-security--incident-response"><strong>Cloud Security & Incident Response</strong></h3>
+      <ul class="writeup-list">
+        <li><a href="./cloud-scenario-3.markdown"><strong>Cloud Intrusion via CI/CD Pipeline:</strong></a> Post-mortem of a compromised deployment pipeline.</li>
+        <li><a href="./cloud-scenario-2.markdown"><strong>IAM Privilege Escalation:</strong></a> Analysis of cross-account vulnerability and remediation.</li>
+        <li><a href="./cloud-scenario-1.markdown"><strong>S3 Data Exposure Incident:</strong></a> Root cause analysis and hardening of misconfigured storage.</li>
+        <li><a href="./cloud-security-secure-lambda-functions.markdown"><strong>Securing Lambda Functions:</strong></a> Implementing least-privilege security for serverless architectures.</li>
+      </ul>
 
-<h3 id="site-reliability--infrastructure-automation"><strong>Site Reliability &amp; Infrastructure Automation</strong></h3>
-<ul>
-  <li><a href="./ad-fs.markdown"><strong>High-Availability AD FS Infrastructure:</strong></a> Multi-region deployment using Windows, Ansible, Terraform, and AWS.</li>
-  <li><a href="./win-admin-1.markdown"><strong>Incident Response - Windows Admin:</strong></a> Deep-dive troubleshooting of runaway processes using PowerShell and CloudWatch.</li>
-  <li><a href="./automating-aws-ami.markdown"><strong>Automating Infrastructure 1:</strong></a> Scalable AWS AMI baking with Ansible.</li>
-  <li><a href="./automating-aws2.markdown"><strong>Automating Infrastructure 2:</strong></a> Full-stack automation with Ansible, Packer, and Terraform on AWS.</li>
-</ul>
+      <h3 id="malware-analysis--forensics"><strong>Malware Analysis & Forensics</strong></h3>
+      <ul class="writeup-list">
+        <li><a href="./deobufscating-javascript1.html"><strong>Deobfuscating Javascript Ch. 1:</strong></a> Identifying malicious indicators in web-based attacks.</li>
+        <li><a href="./forensic-analysis-mp4-files.markdown"><strong>Forensic Analysis of MP4 Files:</strong></a> Using custom Rust tooling (<code>rmp4_meta</code>) for digital investigations.</li>
+      </ul>
 
-<h3 id="cloud-security--incident-response"><strong>Cloud Security &amp; Incident Response</strong></h3>
-<ul>
-  <li><a href="./cloud-scenario-3.markdown"><strong>Cloud Intrusion via CI/CD Pipeline:</strong></a> Post-mortem of a compromised deployment pipeline.</li>
-  <li><a href="./cloud-scenario-2.markdown"><strong>IAM Privilege Escalation:</strong></a> Analysis of cross-account vulnerability and remediation.</li>
-  <li><a href="./cloud-scenario-1.markdown"><strong>S3 Data Exposure Incident:</strong></a> Root cause analysis and hardening of misconfigured storage.</li>
-  <li><a href="./cloud-security-secure-lambda-functions.markdown"><strong>Securing Lambda Functions:</strong></a> Implementing least-privilege security for serverless architectures.</li>
-</ul>
+      <h2 id="-featured-open-source-projects">📂 Featured Open Source Projects</h2>
 
-<h3 id="malware-analysis--forensics"><strong>Malware Analysis &amp; Forensics</strong></h3>
-<ul>
-  <li><a href="./deobufscating-javascript1.html"><strong>Deobfuscating Javascript Ch. 1:</strong></a> Identifying malicious indicators in web-based attacks.</li>
-  <li><a href="./forensic-analysis-mp4-files.markdown"><strong>Forensic Analysis of MP4 Files:</strong></a> Using custom Rust tooling (<code class="language-plaintext highlighter-rouge">rmp4_meta</code>) for digital investigations.</li>
-</ul>
+      <h3><a href="https://github.com/monterrozagera/JSDeFr">JsDeFr</a></h3>
+      <p>A high-performance Javascript Deobfuscation framework designed to automate malware research and improve team productivity.</p>
 
-<hr />
+      <h3><a href="https://github.com/monterrozagera/rmp4_meta">rmp4-meta</a></h3>
+      <p>A memory-safe CLI tool written in <strong>Rust</strong> to extract metadata from MP4 videos for forensic triage.</p>
 
-<h2 id="-featured-open-source-projects">📂 Featured Open Source Projects</h2>
+      <h3><a href="https://github.com/monterrozagera/aws-pyscripts">aws-pyscripts</a></h3>
+      <p>SRE-focused Python tools used to evaluate, audit, and harden AWS cloud infrastructure security.</p>
 
-<h3 id="jsdefr"><a href="https://github.com/monterrozagera/JSDeFr">JsDeFr</a></h3>
-<p>A high-performance Javascript Deobfuscation framework designed to automate malware research and improve team productivity.</p>
+      <h2 id="-technical-notes">🧠 Technical Notes</h2>
+      <p><em>Systems research and continuous learning:</em></p>
+      <p>
+        <strong>Infrastructure:</strong> <a href="./notes/learning-terraform.markdown">Terraform</a> • <a href="./Learning-Docker/Learning%20Ansible.html">Ansible</a> • <a href="./Learning-Docker/Learning%20Docker.html">Docker</a><br>
+        <strong>Config Management:</strong> <a href="./Learning-Docker/Learning%20Puppet.html">Puppet</a> • <a href="./Learning-Docker/Learning%20Chef.html">Chef</a><br>
+        <strong>Scripting:</strong> <a href="./notes/learning-powershell-1.markdown">PowerShell Series</a>
+      </p>
 
-<h3 id="rmp4-meta"><a href="https://github.com/monterrozagera/rmp4_meta">rmp4-meta</a></h3>
-<p>A memory-safe CLI tool written in <strong>Rust</strong> to extract metadata from MP4 videos for forensic triage.</p>
+      <h2 id="-contact--collaboration">📬 Contact & Collaboration</h2>
+      <p>I am available for <strong>Independent SRE Consulting</strong> and remote DevSecOps contracts with US-based organizations looking for CST/MST time-zone parity.</p>
 
-<h3 id="aws-pyscripts"><a href="https://github.com/monterrozagera/aws-pyscripts">aws-pyscripts</a></h3>
-<p>SRE-focused Python tools used to evaluate, audit, and harden AWS cloud infrastructure security.</p>
-
-<hr />
-
-<h2 id="-technical-notes">🧠 Technical Notes</h2>
-<p><em>A collection of my continuous learning and systems research:</em></p>
-<ul>
-  <li><strong>Infrastructure:</strong> <a href="./notes/learning-terraform.markdown">Terraform</a> • <a href="./Learning-Docker/Learning%20Ansible.html">Ansible</a> • <a href="./Learning-Docker/Learning%20Docker.html">Docker</a></li>
-  <li><strong>Configuration Management:</strong> <a href="./Learning-Docker/Learning%20Puppet.html">Puppet</a> • <a href="./Learning-Docker/Learning%20Chef.html">Chef</a></li>
-  <li><strong>Scripting:</strong> <a href="./notes/learning-powershell-1.markdown">PowerShell Series</a></li>
-</ul>
-
-<hr />
-
-<h2 id="-contact--collaboration">📬 Contact &amp; Collaboration</h2>
-<p>I am available for <strong>Independent SRE Consulting</strong> and remote DevSecOps contracts with US-based organizations.</p>
-
-<ul>
-  <li><strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/gerardo-monterroza-8208aa192">linkedin.com/in/gerardo-monterroza-8208aa192</a></li>
-  <li><strong>GitHub:</strong> <a href="https://github.com/monterrozagera">github.com/monterrozagera</a></li>
-  <li><strong>Email:</strong> <a href="mailto:monterrozagerardo@icloud.com">monterrozagerardo@icloud.com</a></li>
-</ul>
-
+      <ul class="contact-list">
+        <li><strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/gerardo-monterroza-8208aa192">linkedin.com/in/gerardo-monterroza</a></li>
+        <li><strong>GitHub:</strong> <a href="https://github.com/monterrozagera">github.com/monterrozagera</a></li>
+        <li><strong>Email:</strong> <a href="mailto:monterrozagerardo@icloud.com">monterrozagerardo@icloud.com</a></li>
+      </ul>
     </div>
   </div>
 
-  <!-- Vanta.js + Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
   <script>
@@ -183,10 +202,9 @@
       });
 
       window.addEventListener("resize", resizeVantaBackground);
-      resizeVantaBackground();
+      // Extra check for dynamic content height
+      setTimeout(resizeVantaBackground, 500);
     });
   </script>
-
 </body>
-
 </html>
